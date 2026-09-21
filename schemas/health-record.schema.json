@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://r-pos.local/schemas/health-record.schema.json",
+  "title": "R-POS Health Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_id", "metric_type", "value", "unit", "recorded_at", "source", "quality"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "record_id": {"type": "string", "minLength": 1},
+    "metric_type": {"enum": ["steps", "sleep", "exercise", "heart_rate", "weight"]},
+    "value": {"type": "number"},
+    "unit": {"type": "string", "minLength": 1},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "source": {"type": "string", "minLength": 1},
+    "quality": {"enum": ["measured", "estimated", "manual"]},
+    "metadata": {"type": "object"}
+  }
+}

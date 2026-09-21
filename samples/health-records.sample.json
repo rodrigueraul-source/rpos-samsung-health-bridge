@@ -1,0 +1,24 @@
+[
+  {
+    "schema_version": "0.1",
+    "record_id": "sample-steps-001",
+    "metric_type": "steps",
+    "value": 8240,
+    "unit": "count",
+    "recorded_at": "2026-09-20T21:00:00-06:00",
+    "source": "sample",
+    "quality": "measured",
+    "metadata": {"period": "day"}
+  },
+  {
+    "schema_version": "0.1",
+    "record_id": "sample-weight-001",
+    "metric_type": "weight",
+    "value": 100.0,
+    "unit": "kg",
+    "recorded_at": "2026-09-20T07:00:00-06:00",
+    "source": "sample",
+    "quality": "manual",
+    "metadata": {}
+  }
+]
