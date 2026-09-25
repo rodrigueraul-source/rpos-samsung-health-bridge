@@ -39,7 +39,7 @@ python -m unittest discover -s tests
 
 ## Estado
 
-**MVP Bridge v0.1 — base inicial.** No incluye sincronización automática ni escritura directa en Notion.
+**UNPARKED · BUILD · 35%** — desarrollo reactivado. La base de normalización ya existe, pero siguen pendientes la prueba Android limpia, lectura real desde Samsung Health, preservación del UID de origen, mapeo a R-POS y validación de deduplicación/reintentos. No se considera PASS.
 
 ## Aviso
 
