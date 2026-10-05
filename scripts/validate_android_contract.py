@@ -59,6 +59,24 @@ def validate_android_contract() -> None:
     if "app/libs/*.aar" not in gitignore:
         raise ValueError("Samsung SDK AAR must remain ignored")
 
+    delivery = ROOT / "app/src/main/java/com/rpos/bridge/delivery"
+    for name in ["BridgeProtocol.kt", "BridgeQueue.kt", "AndroidBridgeRuntime.kt",
+                 "AppsScriptTransport.kt", "BoundedStreams.kt"]:
+        if not (delivery / name).exists():
+            raise ValueError(f"Missing delivery implementation: {name}")
+    manifest = (ROOT / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+    if 'android.permission.INTERNET' not in manifest or 'android:usesCleartextTraffic="false"' not in manifest:
+        raise ValueError("Delivery must use explicit network permission and TLS-only transport")
+    runtime = (delivery / "AndroidBridgeRuntime.kt").read_text(encoding="utf-8")
+    for token in ["noBackupFilesDir", "AtomicFile", "AndroidKeyStore", "AES/GCM/NoPadding"]:
+        if token not in runtime:
+            raise ValueError(f"Private persistence contract missing: {token}")
+    transport = (delivery / "AppsScriptTransport.kt").read_text(encoding="utf-8")
+    if 'instanceFollowRedirects = false' not in transport:
+        raise ValueError("Implicit forwarding of signed requests is forbidden")
+    if any(".readNBytes(" in p.read_text(encoding="utf-8") for p in delivery.glob("*.kt")):
+        raise ValueError("Network/storage reads must work on the minimum supported Android API")
+
     print("PASS: Android acquisition contract is structurally valid")
 
 

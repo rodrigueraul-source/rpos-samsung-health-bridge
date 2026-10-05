@@ -1,6 +1,7 @@
 package com.rpos.bridge
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
@@ -17,6 +18,13 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.text.InputType
+import android.widget.EditText
+import android.widget.ScrollView
+import com.rpos.bridge.delivery.AndroidBridgeRuntime
+import com.rpos.bridge.delivery.BridgeFailure
 import com.rpos.bridge.model.ExerciseSelection
 import com.rpos.bridge.source.ExerciseReaderProvider
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 
 class MainActivity : Activity() {
@@ -32,6 +41,11 @@ class MainActivity : Activity() {
     private lateinit var readButton: Button
     private lateinit var copyButton: Button
     private lateinit var recordPicker: Spinner
+    private lateinit var sendButton: Button
+    private lateinit var pendingButton: Button
+    private lateinit var configureButton: Button
+    private lateinit var deliveryStatus: TextView
+    private var deliveryBusy = false
     private var selection: ExerciseSelection? = null
     private var selectedRecordJson: String? = null
     private val readScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -65,6 +79,33 @@ class MainActivity : Activity() {
             }
         }
 
+        deliveryStatus = TextView(this).apply { text = "Delivery not configured"; textSize = 15f }
+        configureButton = Button(this).apply {
+            text = "CONFIGURE DELIVERY"
+            setOnClickListener { configureDelivery() }
+        }
+        sendButton = Button(this).apply {
+            text = "QUEUE SELECTED + SYNC ONE"
+            isEnabled = false
+            setOnClickListener { sendSelected() }
+        }
+        pendingButton = Button(this).apply {
+            text = "CHECK PENDING RECEIPTS"
+            setOnClickListener { deliveryTask { runtime ->
+                val config = runtime.config() ?: throw BridgeFailure("not_configured")
+                runtime.queue.sendDue(config, max = 1)
+            } }
+            setOnLongClickListener {
+                AlertDialog.Builder(this@MainActivity).setTitle("Backend review completed?")
+                    .setMessage("Only recheck blocked receipts after reviewing the backend issue. This does not clear backend write intents or replace the original export.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Reviewed: recheck") { _, _ ->
+                        deliveryTask { runtime -> runtime.queue.recheckReviewedBlocked(); runtime.queue.summary() }
+                    }.show()
+                true
+            }
+        }
+
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -73,9 +114,14 @@ class MainActivity : Activity() {
             addView(readButton)
             addView(recordPicker)
             addView(copyButton)
+            addView(deliveryStatus)
+            addView(configureButton)
+            addView(sendButton)
+            addView(pendingButton)
         }
 
-        setContentView(layout)
+        setContentView(ScrollView(this).apply { addView(layout) })
+        deliveryTask { it.queue.summary() }
     }
 
     private fun readExercise() {
@@ -85,6 +131,7 @@ class MainActivity : Activity() {
         recordPicker.isEnabled = false
         recordPicker.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, emptyList())
         copyButton.isEnabled = false
+        sendButton.isEnabled = false
         readButton.isEnabled = false
         readScope.launch {
             val result = runCatching {
@@ -115,12 +162,14 @@ class MainActivity : Activity() {
             )
             readButton.isEnabled = true
             copyButton.isEnabled = selectedRecordJson != null
+            updateSendEnabled()
         }
     }
 
     private fun renderSelection(index: Int) {
         selectedRecordJson = null
         copyButton.isEnabled = false
+        sendButton.isEnabled = false
         val batch = selection ?: return
         runCatching {
             batch.select(index)
@@ -134,10 +183,86 @@ class MainActivity : Activity() {
                 "Sessions: ${record.sessions?.size ?: 0}\n" +
                 "Choose a record, then COPY SELECTED JSON."
             copyButton.isEnabled = selectedRecordJson != null
+            updateSendEnabled()
         }.onFailure {
             selectedRecordJson = null
+            sendButton.isEnabled = false
             status.text = "EXPORT FAIL · ${it::class.java.simpleName}"
         }
+    }
+
+    private fun updateSendEnabled() {
+        sendButton.isEnabled = !deliveryBusy && selectedRecordJson != null && ExerciseReaderProvider.SOURCE == "samsung_health"
+    }
+
+    private fun deliveryTask(task: (AndroidBridgeRuntime) -> String) {
+        if (deliveryBusy) return
+        deliveryBusy = true
+        updateSendEnabled()
+        pendingButton.isEnabled = false
+        configureButton.isEnabled = false
+        deliveryStatus.text = "Checking private receipt state..."
+        readScope.launch {
+            try {
+                deliveryStatus.text = withContext(Dispatchers.IO) { task(AndroidBridgeRuntime.get(this@MainActivity)) }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                val safe = if (e is BridgeFailure) e.code else "delivery_error"
+                deliveryStatus.text = "DELIVERY · $safe · original receipts retained"
+            } finally {
+                deliveryBusy = false
+                pendingButton.isEnabled = true
+                configureButton.isEnabled = true
+                updateSendEnabled()
+            }
+        }
+    }
+
+    private fun sendSelected() {
+        val json = selectedRecordJson ?: return
+        deliveryTask { runtime ->
+            runtime.queue.enqueue(json)
+            val config = runtime.config() ?: throw BridgeFailure("not_configured")
+            runtime.queue.sendDue(config, max = 1)
+        }
+    }
+
+    private fun configureDelivery() {
+        // Protect only credential entry; existing read/copy evidence workflow is preserved.
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        val endpoint = EditText(this).apply {
+            hint = "Approved Apps Script /exec URL"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            isSaveEnabled = false
+            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+            imeOptions = imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+        }
+        val secret = EditText(this).apply {
+            hint = "Private 64-character signing key"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            isSaveEnabled = false
+            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+            imeOptions = imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+        }
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(32, 16, 32, 16)
+            addView(endpoint); addView(secret)
+        }
+        val dialog = AlertDialog.Builder(this).setTitle("Private delivery setup")
+            .setMessage("Use the approved deployed endpoint and dedicated Bridge key. Do not enter Notion or IFTTT credentials. Queue is preserved.")
+            .setView(form).setNegativeButton("Cancel", null)
+            .setPositiveButton("Save privately") { _, _ ->
+                val url = endpoint.text.toString().trim()
+                val key = secret.text.toString().trim()
+                secret.text.clear(); endpoint.text.clear()
+                deliveryTask { runtime -> runtime.configure(url, key); "Private setup saved · " + runtime.queue.summary() }
+            }.create()
+        dialog.setOnDismissListener {
+            secret.text.clear(); endpoint.text.clear()
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        dialog.show()
+        dialog.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
     private fun copySelectedRecord() {

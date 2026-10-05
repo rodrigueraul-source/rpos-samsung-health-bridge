@@ -14,6 +14,21 @@ const sha = text => crypto.createHash('sha256').update(text, 'utf8').digest('hex
 const hmac = (text, key) => crypto.createHmac('sha256', key).update(text, 'utf8').digest('hex');
 const clone = value => JSON.parse(JSON.stringify(value));
 
+test('shared Kotlin signing vector is accepted by the unchanged Apps Script intake core', () => {
+  const vector = JSON.parse(fs.readFileSync(path.join(__dirname,
+    '../app/src/test/resources/android_intake_vector.json'), 'utf8'));
+  assert.equal(vector.synthetic_key, KEY);
+  assert.equal(sha(vector.payload_json), vector.payload_sha256);
+  const f = fixture();
+  const request = {schema_version: 'rpos.exercise.intake.v1', sent_at: vector.sent_at,
+    payload_json: vector.payload_json, signature: vector.signature};
+  const result = f.handle(request);
+  assert.equal(result.status, 'staged');
+  assert.equal(result.receipt_id, vector.receipt_id);
+  assert.equal(result.notion_confirmed, false);
+  assert.deepEqual(f.state.files[0].value.export, JSON.parse(vector.payload_json));
+});
+
 function exercise() {
   return {
     schema_version: 'rpos.exercise.export.v1', source: 'samsung_health', sdk_version: '1.1.0',

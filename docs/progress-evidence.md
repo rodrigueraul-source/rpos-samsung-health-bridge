@@ -41,8 +41,9 @@ receptor JavaScript autentica y persiste un export con pruebas sintéticas;
    pedir TXT, enlace ni un número de versión de web app que aún no existe.
 2. Runtime elegido: Apps Script. Receptor, coordinador de entrega JavaScript
    y wrapper de alias preparados en `apps-script/`; no ejecutan el CLI Python.
-   66 pruebas JS sintéticas + 46 Python/validadores PASS local. Faltan envío
-   Android, vínculo/migración revisados en vivo y despliegue/UAT real.
+   Android v0.5 ya prepara cola privada/firma/envío en primer plano: 24 nuevas
+   pruebas JVM locales + 67 JS + 46 Python/validadores PASS. Faltan firmado/build
+   Samsung, vínculo/migración revisados en vivo y despliegue/UAT real.
 3. Configurar autenticación, almacenamiento privado y acceso del endpoint en
    el entorno al revisar el despliegue concreto. Reutilizar la conexión Notion
    aprobada; nunca enviar tokens por chat. El SDK no vuelve a pedirse.

@@ -4,8 +4,11 @@ The approved lane is Samsung Health Bridge → existing R-POS evidence path →
 Fitness Sessions → Core Fitness / Decision Engine / Coach. Fitness scheduling
 remains owned by the existing Apps Script/IFTTT setup.
 
-The v0.4 Android app exports a selected record to the clipboard on user action.
-It has no server endpoint, background upload, Notion token or automatic handoff.
+The v0.5 Android preparation adds private durable queuing, HMAC signing and
+user-initiated foreground send/check. No endpoint/key is embedded: the owner
+privately configures the reviewed deployment on-device. No background upload,
+backend Notion token or unattended acquisition is installed. The existing
+clipboard fallback remains. See `android-delivery.md`.
 The Python `DeliveryWorker` coordinates authenticated writes through `NotionPort`.
 `NotionRestPort` and the host CLI now provide a tested REST implementation for
 reviewed existing Fitness targets. Neither is an installed unattended service.
@@ -24,7 +27,7 @@ active/archived web-app deployments. These runtime/source inputs are received.
 delivery is separately disabled by default. The JavaScript worker now prepares
 reviewed existing-page delivery with durable attempts and v2 record-hash
 evidence; the scheduler wrapper prepares complete UID/alias lookup. No live
-source is replaced. Live binding/historical alias migration, Android handoff
+source is replaced. Live binding/historical alias migration, real Android handoff
 and deployment/operational UAT remain open. Python v1 receipts require explicit
 reviewed migration before this runtime assumes their ownership.
 

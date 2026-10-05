@@ -127,8 +127,9 @@ context reset, changed records, lock contention, journal failures, lost create
 responses, visibility gaps, duplicates/corruption and error redaction. These
 tests do not authorize Drive, create an endpoint or write real evidence.
 
-Remaining implementation: Android queue/signing/send; live reviewed-target/alias
-binding and migration;
+Android v0.5 now prepares private queue/signing/foreground send/check against
+this contract; see `../docs/android-delivery.md`. Remaining operational work:
+Samsung build/signing, live reviewed-target/alias binding and migration;
 reviewed deployment/auth setup; physical handoff/actual cross-system recovery;
 remaining Samsung errors and calorie semantics. Registry stays BUILD 35%.
 
