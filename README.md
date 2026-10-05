@@ -21,12 +21,16 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Staging SQLite privado por `(source, uid)` con intentos de escritura persistentes y confirmación protegida por hash.
 - Coordinador v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas. La interfaz de transporte debe conectarse al runner de evidencia existente; no está desplegada.
 - Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
+- Adaptador REST de Notion y CLI para el host aprobado: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado y probado con servicio sintético; no desplegado. Ver `docs/notion-transport.md`.
 
 ### Gate pendiente
 
 La lectura inicial, el mapeo asistido de UID y el replay controlado ya tienen
-evidencia privada. Quedan otro UID real, permisos/errores y entrega automática
-con recuperación real. Bridge no alcanza PASS hasta demostrar el flujo completo:
+evidencia privada. Dos UID reales y la denegación/restauración de permisos ya
+tienen checkpoints aceptados. Quedan runtime/entrega automática, alias del
+scheduler vigente, otros errores Samsung y recuperación remota real.
+La WBS no define pesos para calcular un nuevo porcentaje; ver
+`docs/progress-evidence.md`. Bridge no alcanza PASS hasta demostrar el flujo completo:
 
 `Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`
 

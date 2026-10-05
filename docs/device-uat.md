@@ -40,6 +40,14 @@ A DataViewer screenshot, exported file, synthetic fixture, or mock flavor does *
 
 ## v0.4: another real UID and consent recovery
 
+**Checkpoint 05-Oct-2026:** the second real UID/export and assisted remote
+delivery/replay are complete. Denied Exercise READ was evidenced with COPY and
+selection disabled; restoration was accepted from the user's requested PASS
+follow-up (same PASS image, no independently timestamped fresh-read trace).
+The batch below is retained as the test procedure, not a repeat request.
+Next immediate owner is AI for runtime/transport preparation; other Samsung
+error cases remain open until a concrete test is prepared.
+
 The initial own-app read and same-UID activity-reopen checkpoints are complete.
 Use the Samsung v0.4 APK for the next gate:
 

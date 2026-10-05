@@ -6,8 +6,10 @@ remains owned by the existing Apps Script/IFTTT setup.
 
 The v0.4 Android app exports a selected record to the clipboard on user action.
 It has no server endpoint, background upload, Notion token or automatic handoff.
-The Python `DeliveryWorker` coordinates authenticated writes supplied through
-`NotionPort`; it is not an installed unattended service or a production adapter.
+The Python `DeliveryWorker` coordinates authenticated writes through `NotionPort`.
+`NotionRestPort` and the host CLI now provide a tested REST implementation for
+reviewed existing Fitness targets. Neither is an installed unattended service.
+See `notion-transport.md` for credential/receipt/reconciliation boundaries.
 
 Before binding/deploying the worker, establish the approved runner's current
 executable source, credential ownership, Android handoff, receipt persistence
@@ -21,6 +23,8 @@ aliases/metrics, source/hash readback and recovery of an actual uncertain write.
 For `unresolved` writes, inspect the original remote request; never clear the
 receipt and blindly repeat a create. A manual/Drive fallback remains valid.
 
-Synthetic coordinator tests only validate the state machine and adapter
-contract. Actual permission/error UAT, another real UID and unattended delivery
-must be evidenced separately before full Bridge PASS.
+Initial acquisition, two actual UID assisted deliveries/replays and denied
+consent/restoration follow-up are accepted private checkpoints. Synthetic
+coordinator/REST tests validate failure behavior under injected conditions.
+Other Samsung errors, actual transport outage recovery and unattended delivery
+remain separate gates before full Bridge PASS.
