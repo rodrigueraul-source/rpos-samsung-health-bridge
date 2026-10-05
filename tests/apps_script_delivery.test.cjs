@@ -258,6 +258,24 @@ test('unrelated or partial prose heading cannot authorize migration', () => {
   }
 });
 
+test('reviewed composite legacy ID is retained exactly with a bounded alias token', () => {
+  const f = migrationFixture();
+  const composite = Array.from({length: 12}, (_, i) => 'synthetic-original-drive-id-' + i).join(';');
+  assert.ok(composite.length > 256);
+  f.migrationReview.aliases = [{source: SCHED, uid: composite, date: {start: '2026-01-03'}}];
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.equal(f.remote.read(PAGE).evidence.aliases[0].uid, composite);
+  assert.deepEqual(clone(f.remote.findAlias(SCHED, composite)), [PAGE]);
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('legacy alias over the rich-text bound fails before any write', () => {
+  const f = migrationFixture(); f.migrationReview.aliases[0].uid = 'x'.repeat(2001);
+  assert.equal(f.migrate().status, 'needs_reconciliation');
+  assert.equal(f.state.patches.length, 0);
+});
+
 test('reviewed existing page delivered/read back; preserves metrics, Notes, alias, and repeated receipt is zero-write', () => {
   const f = fixture();
   assert.equal(f.deliver().status, 'confirmed');

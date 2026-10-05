@@ -22,7 +22,7 @@ function rposBridgeMigrationReview_(review, stored, page, deps) {
   review.aliases.forEach(function(alias) {
     // Explicit reviewed provenance; never derive an alias from dates/titles/prose.
     if (!alias || Object.keys(alias).sort().join(',') !== 'date,source,uid' ||
-        !rposBridgeText_(alias.source, 256) || !rposBridgeText_(alias.uid, 256) ||
+        !rposBridgeText_(alias.source, 256) || !rposBridgeText_(alias.uid, 2000) ||
         !alias.date || typeof alias.date !== 'object' || Array.isArray(alias.date) ||
         typeof alias.date.start !== 'string' || !alias.date.start ||
         Object.keys(alias.date).some(function(k) { return ['start', 'end', 'time_zone'].indexOf(k) < 0; }) ||

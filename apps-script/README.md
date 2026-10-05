@@ -224,6 +224,9 @@ every retained original block's ID, parent, type and content, including nested
 table cells. No hash or delivery receipt is invented for their prior evidence.
 Ordinary delivery still stops for reviewed migration; unrelated prose is not
 recognized by date, workout title or a partial heading match.
+Reviewed legacy alias IDs may contain a composite old Source Record ID up to
+2,000 characters; original Samsung UID validation remains at 256. Alias count,
+full Notes/evidence UTF-8 limits and exact-token readback still apply.
 
 After private intake staging, `rposBridgeAuditMigrationReceipt(receiptId)` reads
 the unique canonical page twice and returns an opaque snapshot hash, target,

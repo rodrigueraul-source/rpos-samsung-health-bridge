@@ -160,7 +160,7 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
     if (ev.value && (source !== ev.value.source || uid !== ev.value.record.uid)) rposBridgeFailure_('delivery_conflict');
     const notes = property(p, 'Notes'), lines = rposBridgePlain_(notes).split(/\r?\n/);
     if (ev.value && !ev.value.aliases.every(function(alias) {
-      return alias && rposBridgeText_(alias.source, 256) && rposBridgeText_(alias.uid, 256) &&
+      return alias && rposBridgeText_(alias.source, 256) && rposBridgeText_(alias.uid, 2000) &&
         lines.indexOf(rposBridgeAlias_(alias.source, alias.uid, sha)) >= 0;
     })) rposBridgeFailure_('delivery_conflict');
     return {id: rposBridgeUuid_(p.id), source: source, uid: uid, edited: p.last_edited_time,
