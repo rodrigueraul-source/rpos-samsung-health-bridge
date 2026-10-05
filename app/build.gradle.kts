@@ -53,6 +53,6 @@ android {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("com.google.code.gson:gson:2.13.2")
-    "samsungImplementation"(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+    "samsungImplementation"(files("libs/samsung-health-data-api-1.1.0.aar"))
     testImplementation("junit:junit:4.13.2")
 }

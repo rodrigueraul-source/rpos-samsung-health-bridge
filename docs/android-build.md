@@ -9,6 +9,26 @@ Recover the missing Android acquisition layer without replacing the existing Pyt
 - `mockDebug`: compiles without Samsung proprietary binaries and is used by CI to prove the Android project structure.
 - `samsungDebug`: real acquisition flavor. Requires the official Samsung Health Data SDK AAR in `app/libs/`.
 
+## SDK pin and Samsung build
+
+The Samsung dependency is pinned to `samsung-health-data-api-1.1.0.aar`.
+The official ZIP supplied in the R-POS Drive folder has SHA-256
+`7a51440d840e099769b150c6414365bc43eecb61c01fa5bf6d0e54e09c2b663f`;
+the AAR has SHA-256
+`f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654`.
+
+`Android Samsung Build` downloads the same official archive into the ephemeral
+runner, verifies both hashes, builds `samsungDebug`, verifies the APK signature
+and retains only the APK and its build identity. The SDK archive/AAR stays out
+of source control. A successful build does not prove permission or Exercise READ
+on a physical device.
+
+For a local build, extract that AAR to `app/libs/` and run:
+
+```sh
+gradle :app:assembleSamsungDebug :app:testSamsungDebugUnitTest
+```
+
 ## Current minimal read contract
 
 The Samsung flavor requests only:
