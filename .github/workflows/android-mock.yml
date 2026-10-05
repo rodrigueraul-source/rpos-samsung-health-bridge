@@ -35,3 +35,11 @@ jobs:
 
       - name: Compile mock flavor
         run: gradle :app:assembleMockDebug --stacktrace
+
+      - name: Retain mock APK build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpos-bridge-mock-debug
+          path: app/build/outputs/apk/mock/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7

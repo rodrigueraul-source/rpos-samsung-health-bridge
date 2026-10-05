@@ -51,7 +51,7 @@ class MainActivity : Activity() {
                 status.text = result.fold(
                     onSuccess = { records ->
                         if (records.isEmpty()) {
-                            "READ PASS · 0 Exercise records"
+                            "NO DATA · real Exercise READ gate remains open"
                         } else {
                             val first = records.first()
                             "READ PASS · ${records.size} records\n" +
