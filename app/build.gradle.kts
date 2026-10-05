@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.rpos.bridge"
     compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "com.rpos.bridge"
