@@ -16,4 +16,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: python scripts/validate_sample.py
+      - run: python scripts/validate_android_contract.py
       - run: python -m unittest discover -s tests
