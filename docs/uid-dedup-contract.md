@@ -13,8 +13,31 @@ For a real Samsung Health Exercise read:
 
 ## Current implementation
 
-`rpos/bridge_event.py` contains the reference mapping and replay guard.
-Unit tests prove the mapping and synthetic replay behavior.
+`rpos/bridge_event.py` contains the reference mapping and in-memory replay guard.
+`rpos/exercise_export.py` validates the v1 own-app export and rejects mock
+provenance or timestamps without a timezone. `rpos/delivery_store.py` persists
+private deliveries in SQLite, unique on `(source, uid)`.
+
+Staging the same event after a restart retains one row. A failed remote write
+leaves it pending; an unchanged confirmed replay remains confirmed. Changed
+payloads return to pending while retaining their reconciled Notion page ID.
+A stale payload hash, mismatched UID/source or different target page cannot
+confirm delivery. Read timestamps belong to the export envelope and do not
+alter event identity. Tests cover these boundaries using synthetic data.
+
+Private handoff staging (no Notion call):
+
+```bash
+python scripts/stage_exercise_export.py data/private/exercise.json
+```
+
+The local receipt is not a distributed exactly-once guarantee. A delivery worker
+must query Notion by source/UID before writing, reconcile manual/Drive evidence,
+update the associated page or create only when no match exists, and read back
+the actual page before calling `confirm_readback`. After a write timeout or
+crash, query again before retrying. Serialize workers targeting the same UID;
+Notion itself has no unique constraint for Source Record ID. No automated
+network worker or live ingestion proof is claimed in this version.
 
 The existing Notion Fitness Sessions schema uses `Source`, `Source Record ID`
 and the expanded `date:Date:start` / `date:Date:is_datetime` fields. It has no

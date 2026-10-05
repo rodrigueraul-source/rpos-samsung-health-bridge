@@ -34,7 +34,7 @@ jobs:
           gradle-version: "8.13"
 
       - name: Compile mock flavor
-        run: gradle :app:assembleMockDebug --stacktrace
+        run: gradle :app:assembleMockDebug :app:testMockDebugUnitTest --stacktrace
 
       - name: Retain mock APK build evidence
         uses: actions/upload-artifact@v4

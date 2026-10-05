@@ -2,6 +2,7 @@ package com.rpos.bridge.source
 
 import android.app.Activity
 import com.rpos.bridge.model.RposExercise
+import com.rpos.bridge.model.RposExerciseSession
 import com.samsung.android.sdk.health.data.HealthDataService
 import com.samsung.android.sdk.health.data.permission.AccessType
 import com.samsung.android.sdk.health.data.permission.Permission
@@ -11,6 +12,7 @@ import com.samsung.android.sdk.health.data.request.LocalTimeFilter
 import java.time.LocalDateTime
 
 object ExerciseReaderProvider {
+    const val SOURCE = "samsung_health"
     fun create(activity: Activity): ExerciseReader = SamsungExerciseReader(activity)
 }
 
@@ -45,14 +47,32 @@ private class SamsungExerciseReader(
                 RposExercise(
                     sourceRecordId = point.uid,
                     startTime = point.startTime.toString(),
-                    endTime = point.endTime.toString(),
-                    zoneOffset = point.zoneOffset.toString(),
+                    endTime = point.endTime?.toString(),
+                    zoneOffset = point.zoneOffset?.toString(),
                     sourceAppId = point.dataSource?.appId,
                     sourceDeviceId = point.dataSource?.deviceId,
                     exerciseType = point.getValue(DataType.ExerciseType.EXERCISE_TYPE).toString(),
                     durationSeconds = null,
                     caloriesKcal = null,
-                    distanceMeters = null
+                    distanceMeters = null,
+                    updateTime = point.updateTime?.toString(),
+                    clientDataId = point.clientDataId,
+                    clientVersion = point.clientVersion,
+                    customTitle = point.getValue(DataType.ExerciseType.CUSTOM_TITLE),
+                    sessions = point.getValue(DataType.ExerciseType.SESSIONS)?.map { session ->
+                        RposExerciseSession(
+                            startTime = session.startTime.toString(),
+                            endTime = session.endTime.toString(),
+                            exerciseType = session.exerciseType.toString(),
+                            durationMillis = session.duration.toMillis(),
+                            caloriesKcal = session.calories.toDouble(),
+                            distanceMeters = session.distance?.toDouble(),
+                            meanHeartRateBpm = session.meanHeartRate?.toDouble(),
+                            maxHeartRateBpm = session.maxHeartRate?.toDouble(),
+                            minHeartRateBpm = session.minHeartRate?.toDouble(),
+                            customTitle = session.customTitle
+                        )
+                    }
                 )
             }
     }

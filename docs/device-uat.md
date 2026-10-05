@@ -37,3 +37,27 @@ Device UAT passes only when:
 - the same UID can later be mapped to Notion `Source Record ID`.
 
 A DataViewer screenshot, exported file, synthetic fixture, or mock flavor does **not** close this gate.
+
+## v0.3 reconciliation export
+
+After the initial phone-read gate, use the Samsung v0.3 APK:
+
+1. If Android reports an incompatible signature, uninstall the old **R-POS
+   Samsung Health Bridge** test app, then install the new APK. Samsung Health
+   records are in Samsung Health, not in this read-only test app. Grant Exercise
+   READ again if prompted. The development signing key must be retained privately
+   for subsequent compatible updates; never commit it to Git.
+2. Tap **READ EXERCISE**, then **COPY FIRST JSON**.
+3. Paste that JSON into the private project chat. No further summary screenshot
+   is required. The clipboard contains exactly the first record from this read;
+   the app sends nothing to Notion or a server.
+
+The export retains the parent Samsung UID/time/source/device metadata and
+per-session exercise type, start/end, reported duration (milliseconds), calories
+(kcal), distance (meters) and heart-rate summaries (bpm). Unknown values remain
+null. Parent totals are not inferred from elapsed time or sums of sub-sessions.
+This is a reconciliation export, not every SDK field: routes, detailed logs,
+comments and other sport-specific properties are outside this version.
+
+Two matching submitted READ screens establish matching count/UID/type/start
+only. They do not establish app-restart stability or persistent Notion replay.

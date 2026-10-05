@@ -13,10 +13,13 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Python normalization MVP + schema/tests.
 - Proyecto Android mínimo con sabores `mock` y `samsung`.
 - Contrato `ExerciseReader`.
-- UI mínima **READ EXERCISE**.
+- UI **READ EXERCISE** + **COPY FIRST JSON** para el handoff privado de un registro.
 - Adaptador Samsung orientado a **Exercise READ** y preservación del `uid` original.
 - CI independiente del SDK propietario mediante `mockDebug`.
 - Device UAT documentado.
+- Exportación v0.3 de UID, tiempos, origen/dispositivo y detalles objetivos por sesión.
+- Staging SQLite privado por `(source, uid)` con reintento tras reinicio y confirmación protegida por hash. No realiza escrituras de red.
+- Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
 
 ### Gate pendiente
 
@@ -51,7 +54,7 @@ El adaptador Android no crea un segundo Fitness database ni modifica Gym V4.
 No requiere Samsung SDK:
 
 ```bash
-gradle :app:assembleMockDebug
+gradle :app:assembleMockDebug :app:testMockDebugUnitTest
 ```
 
 ### Samsung real
