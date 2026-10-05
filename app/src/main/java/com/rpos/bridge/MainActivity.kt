@@ -7,11 +7,17 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.rpos.bridge.source.ExerciseReaderProvider
-import kotlinx.coroutines.runBlocking
-import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class MainActivity : Activity() {
     private lateinit var status: TextView
+    private lateinit var readButton: Button
+    private val readScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,7 +27,7 @@ class MainActivity : Activity() {
             textSize = 18f
         }
 
-        val button = Button(this).apply {
+        readButton = Button(this).apply {
             text = "READ EXERCISE"
             setOnClickListener { readExercise() }
         }
@@ -31,7 +37,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(48, 48, 48, 48)
             addView(status)
-            addView(button)
+            addView(readButton)
         }
 
         setContentView(layout)
@@ -39,32 +45,34 @@ class MainActivity : Activity() {
 
     private fun readExercise() {
         status.text = "Reading..."
-        thread(name = "rpos-exercise-read") {
+        readButton.isEnabled = false
+        readScope.launch {
             val result = runCatching {
-                runBlocking {
-                    ExerciseReaderProvider.create(this@MainActivity)
-                        .readRecentExercises(days = 30)
-                }
-            }
-
-            runOnUiThread {
-                status.text = result.fold(
-                    onSuccess = { records ->
-                        if (records.isEmpty()) {
-                            "NO DATA · real Exercise READ gate remains open"
-                        } else {
-                            val first = records.first()
-                            "READ PASS · ${records.size} records\n" +
-                                "UID: ${first.sourceRecordId}\n" +
-                                "Type: ${first.exerciseType}\n" +
-                                "Start: ${first.startTime}"
-                        }
-                    },
-                    onFailure = { error ->
-                        "READ FAIL · ${error::class.java.simpleName}: ${error.message}"
+                ExerciseReaderProvider.create(this@MainActivity)
+                    .readRecentExercises(days = 30)
+            }.onFailure { if (it is CancellationException) throw it }
+            status.text = result.fold(
+                onSuccess = { records ->
+                    if (records.isEmpty()) {
+                        "NO DATA · real Exercise READ gate remains open"
+                    } else {
+                        val first = records.first()
+                        "READ PASS · ${records.size} records\n" +
+                            "UID: ${first.sourceRecordId}\n" +
+                            "Type: ${first.exerciseType}\n" +
+                            "Start: ${first.startTime}"
                     }
-                )
-            }
+                },
+                onFailure = { error ->
+                    "READ FAIL · ${error::class.java.simpleName}: ${error.message}"
+                }
+            )
+            readButton.isEnabled = true
         }
+    }
+
+    override fun onDestroy() {
+        readScope.cancel()
+        super.onDestroy()
     }
 }

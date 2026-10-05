@@ -44,18 +44,3 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Export public build dependencies for offline Samsung build
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/rpos-dependencies"
-          tar -C "$HOME/.gradle/caches" -czf "$RUNNER_TEMP/rpos-dependencies.tar.gz" modules-2
-          split -b 25M -d "$RUNNER_TEMP/rpos-dependencies.tar.gz" "$RUNNER_TEMP/rpos-dependencies/part-"
-
-      - name: Retain public dependency bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: rpos-public-build-dependencies
-          path: ${{ runner.temp }}/rpos-dependencies/part-*
-          compression-level: 0
-          if-no-files-found: error
-          retention-days: 1

@@ -4,11 +4,16 @@ This is the first point where Raul must intervene physically.
 
 ## Preconditions
 
-1. Use a compatible Samsung Android phone/tablet with Samsung Health installed.
-2. Install the official Samsung Health Data SDK AAR into `app/libs/`.
-3. Build/install the `samsungDebug` flavor.
-4. In Samsung Health Data SDK Developer Mode, enable **Data Read** for testing.
+1. Use a physical Android 10+ phone with Samsung Health 6.30.2+ installed and initialized; emulators are unsupported.
+2. For a source build, place the verified official SDK 1.1.0 AAR in `app/libs/`; the supplied APK already includes the SDK.
+3. Install the `samsungDebug` APK (package `com.rpos.bridge`, not `com.rpos.bridge.mock`).
+4. For this development test, open Samsung Health > Settings > About Samsung Health. Tap the version line at least ten times, open **Developer mode (Samsung Health Data SDK)**, acknowledge the test notice and enable **Developer Mode for Data Read**.
 5. Launch **R-POS Samsung Health Bridge**.
+6. Ensure Samsung Health has at least one Exercise record within the last 30 days.
+
+Official prerequisites and developer test steps:
+https://developer.samsung.com/health/data/overview.html
+https://developer.samsung.com/health/data/guide/developer-mode.html
 
 ## UAT
 
