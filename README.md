@@ -2,44 +2,82 @@
 
 Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness**.
 
-## Objetivo del MVP v0.1
+## Estado actual
 
-Convertir exportaciones de Samsung Health en un modelo normalizado que pueda alimentar R-POS y, posteriormente, su Control Tower.
+**UNPARKED · BUILD · 35%**
+
+La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Android faltante sin reemplazar el MVP Python ya validado.
+
+### Evidencia disponible
+
+- Python normalization MVP + schema/tests.
+- Proyecto Android mínimo con sabores `mock` y `samsung`.
+- Contrato `ExerciseReader`.
+- UI mínima **READ EXERCISE**.
+- Adaptador Samsung orientado a **Exercise READ** y preservación del `uid` original.
+- CI independiente del SDK propietario mediante `mockDebug`.
+- Device UAT documentado.
+
+### Gate pendiente
+
+Bridge no alcanza PASS hasta demostrar en un dispositivo físico:
+
+`Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`
+
+## Arquitectura
 
 ```text
-Samsung Health / export -> ingest -> validate + normalize -> R-POS JSON -> Notion / Control Tower
+Samsung Health
+     |
+     v
+Android acquisition adapter
+     |
+     v
+Samsung UID + objective fields
+     |
+     v
+existing R-POS normalization/evidence path
+     |
+     v
+Fitness Tracker / Decision Engine / Coach
 ```
 
-## Alcance inicial
+El adaptador Android no crea un segundo Fitness database ni modifica Gym V4.
 
-- pasos diarios;
-- sueño;
-- sesiones de ejercicio;
-- frecuencia cardiaca;
-- peso;
-- trazabilidad del origen y fecha de sincronización.
+## Build
 
-El MVP usa archivos JSON de ejemplo para validar el modelo sin depender todavía de credenciales, APIs móviles o automatizaciones externas.
+### Mock / CI
 
-## Validación
+No requiere Samsung SDK:
 
-Requiere Python 3.11 o superior.
+```bash
+gradle :app:assembleMockDebug
+```
+
+### Samsung real
+
+Requiere el AAR oficial Samsung Health Data SDK en `app/libs/`. Ver:
+
+- `docs/android-build.md`
+- `docs/device-uat.md`
+
+## Validación Python
+
+Requiere Python 3.11+:
 
 ```bash
 python scripts/validate_sample.py
+python scripts/validate_android_contract.py
 python -m unittest discover -s tests
 ```
 
 ## Gobernanza
 
-- No guardar credenciales ni datos reales de salud en el repositorio.
-- Separar datos crudos y normalizados.
-- Mantener fuente y momento de captura.
-- Aplicar revisión humana antes de usar recomendaciones de salud.
-
-## Estado
-
-**UNPARKED · BUILD · 35%** — desarrollo reactivado. La base de normalización ya existe, pero siguen pendientes la prueba Android limpia, lectura real desde Samsung Health, preservación del UID de origen, mapeo a R-POS y validación de deduplicación/reintentos. No se considera PASS.
+- No guardar credenciales ni datos reales de salud en Git.
+- No versionar el AAR propietario.
+- Preservar `source`, `recorded_at` y el identificador de origen.
+- No sustituir Samsung `uid` por un ID sintético cuando se cierre el gate real.
+- No aumentar progreso por documentación o código no probado en dispositivo.
 
 ## Aviso
 
