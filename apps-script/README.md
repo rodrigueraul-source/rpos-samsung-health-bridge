@@ -1,6 +1,6 @@
-# Apps Script intake preparation — existing scheduler
+# Apps Script intake and delivery preparation — existing scheduler
 
-This is the first JavaScript runtime block for the user-selected existing
+This is the JavaScript runtime preparation for the user-selected existing
 Apps Script scheduler. The user confirmed on 05-Oct-2026 that the reviewed
 `R-POS External Scheduler F V0_3.txt` is the latest saved code. Their screenshot
 shows no active or archived deployments. Time-triggered scheduling is distinct
@@ -12,9 +12,15 @@ from a deployed HTTP web app; no deployment version is currently available.
   staging coordinator, with source/UID identity and a canonical **record** hash.
 - `BridgeEndpoint.gs`: Apps Script `doPost`, Script Lock, Script Properties intent
   journal and Drive receipt storage. Disabled unless explicitly configured.
+- `BridgeDelivery.gs` / `BridgeNotion.gs`: reviewed existing-page delivery, durable
+  write intent and complete remote identity/hash/uniqueness readback.
+- `BridgeScheduler.gs`: UID/alias lookup and persistent capture-creation intent.
+  Binding instructions: `scheduler-integration.md`.
 - Receipt states are `writing` / `staged`. `staged` means the export was persisted
   and read back, **not** delivered to Notion. Every response sets
-  `notion_confirmed: false`. No Notion or IFTTT call is made.
+  `notion_confirmed: false`. Separately enabled delivery adds a nested `delivery`
+  receipt; only its `confirmed` status means Notion evidence was read back.
+  No Bridge file calls IFTTT.
 - Original fields, nulls, titles, segment overlaps and millisecond timestamps
   are retained. No calories, elapsed/active duration or parent totals are inferred.
 - A new `read_at` or `read_record_count` on the same unchanged record reuses its
@@ -22,13 +28,14 @@ from a deployed HTTP web app; no deployment version is currently available.
 
 The receipt namespace/hash is separate from the Python delivery database and
 `rpos.notion.evidence.v1` event hashes. It is an intake queue in the existing
-evidence lane, not a second Fitness database. A future Apps Script delivery
-worker must bridge these contracts explicitly before it can confirm Notion.
+evidence lane, not a second Fitness database. The prepared delivery writes an explicit `rpos.notion.evidence.v2` record/hash
+block and stops on Python v1/legacy evidence as `needs_migration`. Existing
+accepted receipts are not rewritten or treated as automatic-flow proof.
 Synthetic tests are preparation evidence only, not a real outage/device PASS.
 
 ## Integration prerequisites (no deployment in this commit)
 
-Add both `.gs` files to the existing project after reviewing the change. Do not
+Add all five runtime `.gs` files to the existing project after reviewing the change. Do not
 replace `Code.gs`, install triggers, run scheduler test handlers or modify its
 existing Notion/IFTTT properties. The reviewed snapshot has no `doPost`; recheck
 the live project before adding this endpoint to avoid a duplicate handler.
@@ -51,7 +58,7 @@ Script Properties quota exhaustion fails closed before a new Drive create.
 Intent keys are retained, never automatically evicted. A future capacity/
 retention migration must preserve all write intents and receipt identities.
 An `unresolved` receipt requires inspection; do not clear the journal to retry.
-One Script Lock serializes this intake only; it does not coordinate external
+One Script Lock serializes intake, delivery and the prepared scheduler wrapper; it does not coordinate external
 Drive writers, another project or the Python SQLite worker. Keep one configured
 intake writer and protect its receipt folder.
 
@@ -111,7 +118,7 @@ and health fields are never returned to the client or deliberately logged.
 ## Local verification
 
 ```bash
-node --test tests/apps_script_intake.test.cjs
+node --test tests/apps_script_*.test.cjs
 ```
 
 Tests load the actual `.gs` files in a Node VM using synthetic exports/services.
@@ -120,8 +127,8 @@ context reset, changed records, lock contention, journal failures, lost create
 responses, visibility gaps, duplicates/corruption and error redaction. These
 tests do not authorize Drive, create an endpoint or write real evidence.
 
-Remaining implementation: Apps Script Notion delivery coordinator, reviewed
-target reconciliation and scheduler alias binding; Android queue/signing/send;
+Remaining implementation: Android queue/signing/send; live reviewed-target/alias
+binding and migration;
 reviewed deployment/auth setup; physical handoff/actual cross-system recovery;
 remaining Samsung errors and calorie semantics. Registry stays BUILD 35%.
 
@@ -131,3 +138,70 @@ Official API references:
 - https://developers.google.com/apps-script/reference/lock/lock-service
 - https://developers.google.com/apps-script/reference/drive/folder
 - https://developers.google.com/apps-script/guides/services/quotas
+
+## Delivery configuration and reviewed targets
+
+Additional dedicated Script Properties (absent/off by default):
+
+| Property | Meaning |
+| --- | --- |
+| `BRIDGE_DELIVERY_ENABLED` | Literal `true` enables delivery after authenticated staging |
+| `BRIDGE_FITNESS_DATA_SOURCE_ID` | Existing Fitness source, enforced to match `RPOS.fitnessDataSourceId`; NOT the scheduler log `NOTION_DATA_SOURCE_ID` |
+| `BRIDGE_SCHEDULER_BINDING_REVIEWED` | Literal `true` only after the wrapper and historical alias migration have been reviewed; required by delivery and the wrapper |
+
+Backend delivery uses existing `NOTION_TOKEN`, never the Android signing key.
+For one receipt, privately set `RPOS_BRIDGE_REVIEW_<receipt_id>` to this JSON;
+never version real entries:
+
+```json
+{
+  "schema_version": "rpos.bridge.review.v2",
+  "source": "samsung_health",
+  "uid": "<original UID>",
+  "record_hash": "<staged record hash>",
+  "target_page_id": "<existing Fitness page UUID>",
+  "expected_last_edited_time": "<exact current remote edit timestamp>",
+  "expected_source": "<current Source>",
+  "expected_uid": "<current Source Record ID>",
+  "review_basis": "<verified source window/segment sequence and destination>"
+}
+```
+
+No date-only matching or Fitness creation occurs in delivery. Existing schema,
+active Fitness parent and complete pagination are checked. Original Notes
+formatting/links/mentions and prior alias/date are preserved. Only Source,
+Source Record ID, Date and an archived Notes alias are changed. Metrics,
+subjective fields and Capture State are untouched. Original record fields,
+nulls and millisecond timestamps remain in v2 evidence.
+
+The hash-bound review is checked before and after preparing both writes. Both
+payload limits are preflighted before either write. A durable, readback-verified
+`attempting` journal is saved before Notion mutation. Property and evidence
+writes are single attempts, not atomic. A lost evidence-write response may
+become `confirmed` from source/UID/record/hash/receipt and uniqueness readback.
+A partial property write without evidence stays `unresolved`, with zero further
+writes. Changed/removed confirmed evidence is a conflict. Never clear the
+journal or re-create evidence blindly; investigate the remote state first.
+429/5xx and transport errors are redacted, with no automatic HTTP retries.
+
+`rposBridgeDeliverReceipt(receiptId)` is an operator callable function with an
+opaque receipt argument. It installs no trigger. Authenticated re-POST of the
+same unchanged export can read back nested delivery once enabled; the outer
+receipt always means staging only. Missing review: `needs_reconciliation`.
+Existing v1/legacy evidence: `needs_migration`, requiring reviewed conversion
+before this runtime takes ownership. The old two accepted UID proofs remain
+valid, but are not automatic v2 delivery proof.
+
+Keep a single delivery writer and stop the Python relay for transferred UIDs.
+Preserve all intake/delivery/scheduler journals across quota/storage migrations.
+The same-project lock does not coordinate other projects or manual editors.
+Notion lacks a cross-request transaction or conditional compare-and-swap;
+an external edit can still race after the final check. Review this boundary
+before enabling delivery or applying the wrapper.
+
+Additional official API references:
+- https://developers.notion.com/reference/query-a-data-source
+- https://developers.notion.com/reference/retrieve-a-page-property
+- https://developers.notion.com/reference/patch-page
+- https://developers.notion.com/reference/patch-block-children
+- https://developers.notion.com/reference/versioning

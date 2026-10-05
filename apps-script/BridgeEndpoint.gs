@@ -1,4 +1,4 @@
-/* Add both .gs files to the existing scheduler only after reviewing setup. */
+/* Add runtime .gs files to the existing scheduler only after reviewing setup. */
 function rposBridgeHex_(bytes) {
   return bytes.map(function(byte) { return ('0' + ((byte + 256) % 256).toString(16)).slice(-2); }).join('');
 }
@@ -77,6 +77,11 @@ function doPost(e) {
           create: function(id, value) { return currentStore().create(id, value); }
         }
       });
+      // Intake releases its lock before optional delivery takes the same Script Lock.
+      // Off by default; the outer staged receipt never claims Notion confirmation.
+      if (result.status === 'staged' && properties.getProperty('BRIDGE_DELIVERY_ENABLED') === 'true') {
+        result.delivery = rposBridgeDeliverReceipt(result.receipt_id);
+      }
     }
   } catch (ignore) {
     result = rposBridgeResult_('storage_error');

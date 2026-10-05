@@ -39,9 +39,10 @@ receptor JavaScript autentica y persiste un export con pruebas sintéticas;
 
 1. Proyecto y código vigente: recibidos y confirmados por Raul. No volver a
    pedir TXT, enlace ni un número de versión de web app que aún no existe.
-2. Runtime elegido: Apps Script. Completar el coordinador de entrega JavaScript
-   y el vínculo de alias del scheduler antes de instalar/desplegar. El bloque
-   de recepción se prepara en `apps-script/`; no ejecuta el CLI Python.
+2. Runtime elegido: Apps Script. Receptor, coordinador de entrega JavaScript
+   y wrapper de alias preparados en `apps-script/`; no ejecutan el CLI Python.
+   66 pruebas JS sintéticas + 46 Python/validadores PASS local. Faltan envío
+   Android, vínculo/migración revisados en vivo y despliegue/UAT real.
 3. Configurar autenticación, almacenamiento privado y acceso del endpoint en
    el entorno al revisar el despliegue concreto. Reutilizar la conexión Notion
    aprobada; nunca enviar tokens por chat. El SDK no vuelve a pedirse.
@@ -50,3 +51,22 @@ Antes de cambiar el porcentaje, acordar una regla de hitos ponderados o un
 criterio explícito de avance parcial. Esto corrige la medición administrativa;
 los hitos técnicos ya aceptados siguen válidos y no deben repetirse. Bridge
 PASS y el gate vertical de tres ciclos son criterios distintos; no mezclarlos.
+
+
+## Preparación de entrega y alias · 05-Oct-2026
+
+El coordinador Apps Script conserva una intención persistente antes de escribir
+Notion. La pérdida de la respuesta de evidencia puede confirmarse por lectura
+posterior; una escritura parcial sin evidencia queda sin resolver y no se
+repite. Consulta completa, revisión ligada a hash/UID/fecha de edición, esquema,
+página activa y bloqueo protegen la reutilización de páginas existentes.
+Alias archivados exactos permiten al scheduler encontrar la página canónica
+tras reemplazar su ID por el UID Samsung. Intención previa de creación evita
+recrear una captura tras respuesta perdida. No se crean sesiones en el worker.
+
+Contrato de evidencia v2 explícito: no se confunde el hash JS del registro con
+el hash Python del evento. Recibos v1 y alias históricos sólo en prosa esperan
+migración revisada. La entrega exige revisión del vínculo scheduler/alias y
+la fuente Fitness exacta. Notion no ofrece transacción entre estas escrituras;
+editores externos no participan en Script Lock. Código y pruebas sintéticas
+no cierran BR01/02/03 ni recuperación real. BUILD 35% permanece vigente.

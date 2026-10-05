@@ -21,8 +21,12 @@ Do not add a second scheduler, notification stream or Fitness database.
 its link, confirmed the scheduler TXT is the latest saved code and showed no
 active/archived web-app deployments. These runtime/source inputs are received.
 `apps-script/` prepares authenticated durable intake in that existing project;
-it does not call Notion or replace the scheduler. The JavaScript delivery worker,
-alias binding and Android handoff remain open before deployment/operational UAT.
+delivery is separately disabled by default. The JavaScript worker now prepares
+reviewed existing-page delivery with durable attempts and v2 record-hash
+evidence; the scheduler wrapper prepares complete UID/alias lookup. No live
+source is replaced. Live binding/historical alias migration, Android handoff
+and deployment/operational UAT remain open. Python v1 receipts require explicit
+reviewed migration before this runtime assumes their ownership.
 
 Acceptance for the adapter is fully paginated exact UID lookup, explicit
 manual-evidence reconciliation by source window/sequence, preservation of
