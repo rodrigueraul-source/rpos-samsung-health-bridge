@@ -13,17 +13,20 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Python normalization MVP + schema/tests.
 - Proyecto Android mínimo con sabores `mock` y `samsung`.
 - Contrato `ExerciseReader`.
-- UI **READ EXERCISE** + **COPY FIRST JSON** para el handoff privado de un registro.
+- UI **READ EXERCISE** + selector por fecha/título/UID + **COPY SELECTED JSON** para el handoff privado de un registro.
 - Adaptador Samsung orientado a **Exercise READ** y preservación del `uid` original.
 - CI independiente del SDK propietario mediante `mockDebug`.
 - Device UAT documentado.
 - Exportación v0.3 de UID, tiempos, origen/dispositivo y detalles objetivos por sesión.
-- Staging SQLite privado por `(source, uid)` con reintento tras reinicio y confirmación protegida por hash. No realiza escrituras de red.
+- Staging SQLite privado por `(source, uid)` con intentos de escritura persistentes y confirmación protegida por hash.
+- Coordinador v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas. La interfaz de transporte debe conectarse al runner de evidencia existente; no está desplegada.
 - Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
 
 ### Gate pendiente
 
-Bridge no alcanza PASS hasta demostrar en un dispositivo físico:
+La lectura inicial, el mapeo asistido de UID y el replay controlado ya tienen
+evidencia privada. Quedan otro UID real, permisos/errores y entrega automática
+con recuperación real. Bridge no alcanza PASS hasta demostrar el flujo completo:
 
 `Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`
 

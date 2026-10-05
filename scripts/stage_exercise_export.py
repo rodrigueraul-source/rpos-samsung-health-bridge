@@ -19,7 +19,8 @@ def main():
     event = event_from_export(json.loads(args.export.read_text()))
     args.database.parent.mkdir(parents=True, exist_ok=True)
     delivery = DeliveryStore(args.database).stage(event)
-    print(f"Staged: {delivery.state}; pending deliveries: {len(DeliveryStore(args.database).pending())}")
+    store = DeliveryStore(args.database)
+    print(f"Staged: {delivery.state}; pending: {len(store.pending())}; outstanding: {len(store.outstanding())}")
     print("No Notion write performed. Reconcile evidence and verify remote readback before confirmation.")
 
 

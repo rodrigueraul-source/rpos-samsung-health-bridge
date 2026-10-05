@@ -8,13 +8,14 @@ android {
     namespace = "com.rpos.bridge"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
+    buildFeatures { buildConfig = true }
 
     defaultConfig {
         applicationId = "com.rpos.bridge"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     flavorDimensions += "healthSource"

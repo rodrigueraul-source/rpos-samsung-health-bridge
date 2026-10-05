@@ -38,19 +38,35 @@ Device UAT passes only when:
 
 A DataViewer screenshot, exported file, synthetic fixture, or mock flavor does **not** close this gate.
 
-## v0.3 reconciliation export
+## v0.4: another real UID and consent recovery
 
-After the initial phone-read gate, use the Samsung v0.3 APK:
+The initial own-app read and same-UID activity-reopen checkpoints are complete.
+Use the Samsung v0.4 APK for the next gate:
 
-1. If Android reports an incompatible signature, uninstall the old **R-POS
-   Samsung Health Bridge** test app, then install the new APK. Samsung Health
-   records are in Samsung Health, not in this read-only test app. Grant Exercise
-   READ again if prompted. The development signing key must be retained privately
-   for subsequent compatible updates; never commit it to Git.
-2. Tap **READ EXERCISE**, then **COPY FIRST JSON**.
-3. Paste that JSON into the private project chat. No further summary screenshot
-   is required. The clipboard contains exactly the first record from this read;
-   the app sends nothing to Notion or a server.
+1. Install v0.4 as an update over v0.3. The retained development certificate is
+   reused; normal updates should not need uninstall/reconfiguration.
+2. Tap **READ EXERCISE**. In the record dropdown, choose a different workout
+   from the previously reconciled one. Date/title/type and a UID suffix identify
+   rows; the selected full original UID appears above the picker.
+3. Tap **COPY SELECTED JSON**, then paste that JSON into the private project
+   chat. The export contains only the selected record, with the count/read time
+   of this fresh batch. No additional success screenshot or repeated same-UID
+   activity-reopen test is needed.
+4. In the same device-test window, revoke the Bridge's Exercise READ access in
+   Samsung Health, tap READ, and decline its request. The result must be READ
+   FAIL, with COPY and selection disabled. Capture only that failure screen.
+5. Tap READ again and grant Exercise READ. Confirm READ PASS, reselect the
+   intended workout and copy its JSON. Send the final JSON plus the denied-read
+   screen together; no need to send two exports of the same selected record.
+
+If Samsung Health provides different permission-management controls, report
+the visible options rather than uninstalling Samsung Health or deleting data.
+Missing/outdated/disabled Samsung Health error paths remain separate open UAT;
+this batch only covers denied/revoked consent and restoration.
+
+The app sends nothing to Notion or a server. AI reconciles the new UID against
+existing source windows/segment sequences before any live Fitness write.
+Ambiguous matches remain pending; existing metrics/manual aliases are preserved.
 
 The export retains the parent Samsung UID/time/source/device metadata and
 per-session exercise type, start/end, reported duration (milliseconds), calories
@@ -59,5 +75,7 @@ null. Parent totals are not inferred from elapsed time or sums of sub-sessions.
 This is a reconciliation export, not every SDK field: routes, detailed logs,
 comments and other sport-specific properties are outside this version.
 
-Two matching submitted READ screens establish matching count/UID/type/start
-only. They do not establish app-restart stability or persistent Notion replay.
+The initial activity-reopen proof does not establish an OS reboot or measured
+process termination. Delivery-worker fault-injection tests use synthetic data;
+authenticated unattended transport and real cross-system timeout/crash tests
+remain open.
