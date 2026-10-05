@@ -25,6 +25,26 @@ class BridgeEventTests(unittest.TestCase):
                 {"start_time": "2026-10-03T17:36:00-06:00"}
             )
 
+    def test_mapping_matches_existing_fitness_sessions_schema(self):
+        event = event_from_samsung_exercise(
+            {
+                "uid": "samsung-uid-schema-test",
+                "start_time": "2026-10-03T23:36:00.247Z",
+                "exercise_type": "OTHER",
+            }
+        )
+        self.assertEqual(
+            event.to_notion_properties(),
+            {
+                "Source": "samsung_health",
+                "Source Record ID": "samsung-uid-schema-test",
+                "date:Date:start": "2026-10-03T23:36:00.247Z",
+                "date:Date:is_datetime": 1,
+            },
+        )
+        self.assertEqual(event.metric_type, "exercise")
+        self.assertEqual(event.objective, {"exercise_type": "OTHER"})
+
     def test_replay_is_idempotent(self):
         event = event_from_samsung_exercise(
             {

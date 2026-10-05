@@ -19,15 +19,18 @@ class BridgeEvent:
         return (self.source, self.source_record_id)
 
     def to_notion_properties(self) -> dict[str, Any]:
-        """Return the minimal provenance mapping required by R-POS.
+        """Return connector properties for the existing Fitness Sessions schema.
 
-        This deliberately does not perform network writes.
+        Date uses Notion's expanded date fields. The canonical metric_type stays
+        on the event; Fitness Sessions has no Recorded At or Metric Type columns.
+        This deliberately does not perform network writes or match an existing
+        manually captured workout by date alone.
         """
         return {
             "Source": self.source,
             "Source Record ID": self.source_record_id,
-            "Recorded At": self.recorded_at,
-            "Metric Type": self.metric_type,
+            "date:Date:start": self.recorded_at,
+            "date:Date:is_datetime": 1,
         }
 
 
