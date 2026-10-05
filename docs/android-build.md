@@ -17,11 +17,10 @@ The official ZIP supplied in the R-POS Drive folder has SHA-256
 the AAR has SHA-256
 `f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654`.
 
-`Android Samsung Build` downloads the same official archive into the ephemeral
-runner, verifies both hashes, builds `samsungDebug`, verifies the APK signature
-and retains only the APK and its build identity. The SDK archive/AAR stays out
-of source control. A successful build does not prove permission or Exercise READ
-on a physical device.
+The SDK archive/AAR stays out of source control. A successful build does not
+prove permission or Exercise READ on a physical device. The Samsung web download
+endpoint returned a non-ZIP response during CI; use the verified official archive
+already supplied instead of accepting that response.
 
 For a local build, extract that AAR to `app/libs/` and run:
 
