@@ -97,8 +97,9 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
   }
   function evidence(id) {
     const pending = [{id: id, depth: 0}], seen = Object.create(null);
-    let managed = null, legacy = false, count = 0;
+    let managed = null, legacy = false, proseLegacy = false, count = 0;
     const legacyBlocks = [];
+    const proseBlocks = [];
     while (pending.length) {
       const node = pending.pop();
       if (seen[node.id] || node.depth > 30) rposBridgeFailure_('delivery_conflict');
@@ -106,6 +107,19 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
       list('GET', '/blocks/' + rposBridgeUuid_(node.id) + '/children').forEach(function(b) {
         if (++count > 10000 || b.in_trash || b.archived) rposBridgeFailure_('delivery_conflict');
         const text = rposBridgePlain_((b[b.type] || {}).rich_text || []);
+        // Accepted early reconciliation pages contain prose rather than a v1
+        // hash block. Recognize only our exact heading, never a date/title match.
+        // Explicit UID/record/target/snapshot-bound operator review is still
+        // required. Bind every retained original block, including table cells.
+        if (/^heading_[123]$/.test(b.type) &&
+            /^Samsung Health Bridge · UID reconciliation · \d{2}-[A-Za-z]{3}-\d{4}$/.test(text)) {
+          proseLegacy = true;
+        }
+        if (text.indexOf(prefix) !== 0) {
+          proseBlocks.push({id: b.id ? rposBridgeUuid_(b.id) : null, type: b.type,
+            text_hash: sha(JSON.stringify(rposBridgeCanonical_({parent: node.id,
+              content: b[b.type] || {}, has_children: b.has_children === true})))});
+        }
         if (text.indexOf('rpos.notion.evidence.v1\n') === 0 || /Bridge payload SHA256:\s*`?[a-f0-9]{64}/.test(text)) {
           legacy = true;
           legacyBlocks.push({id: b.id ? rposBridgeUuid_(b.id) : null, type: b.type, text_hash: sha(text)});
@@ -123,6 +137,10 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
         }
         if (b.has_children) pending.push({id: rposBridgeUuid_(b.id), depth: node.depth + 1});
       });
+    }
+    if (proseLegacy) {
+      legacy = true;
+      legacyBlocks.splice.apply(legacyBlocks, [0, legacyBlocks.length].concat(proseBlocks));
     }
     legacyBlocks.sort(function(a, b) { return String(a.id).localeCompare(String(b.id)); });
     if (managed && (legacy || managed.migration)) {

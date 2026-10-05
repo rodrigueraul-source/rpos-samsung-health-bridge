@@ -217,6 +217,14 @@ aliases, not managed v2 evidence/exact alias tokens. Their identity and existing
 metric/feedback states were inspected read-only. Conversion is not inferred from
 the fact that those pages already have a Samsung UID.
 
+Early pages headed `Samsung Health Bridge · UID reconciliation · DD-Mmm-YYYY`
+may contain reconciliation prose without a v1 hash block. They use the same
+explicit operator review and unique canonical UID checks. Their snapshot binds
+every retained original block's ID, parent, type and content, including nested
+table cells. No hash or delivery receipt is invented for their prior evidence.
+Ordinary delivery still stops for reviewed migration; unrelated prose is not
+recognized by date, workout title or a partial heading match.
+
 After private intake staging, `rposBridgeAuditMigrationReceipt(receiptId)` reads
 the unique canonical page twice and returns an opaque snapshot hash, target,
 record hash and legacy block count. It does not return health fields, write a

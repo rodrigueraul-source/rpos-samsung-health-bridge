@@ -199,6 +199,65 @@ function fixture(previous) {
     scheduler: create => clone(c.rposBridgeScheduler_(EVENT, {...deps, journal: journal(state.scheduler)}, create))};
 }
 
+function proseMigrationFixture() {
+  const f = migrationFixture();
+  f.state.blocks = [
+    {id: LEGACY, type: 'heading_2', has_children: false,
+      heading_2: {rich_text: rt('Samsung Health Bridge · UID reconciliation · 03-Jan-2026')}},
+    {id: '55555555-5555-5555-5555-555555555555', type: 'paragraph', has_children: false,
+      paragraph: {rich_text: rt('Previously accepted export and provenance retained')}},
+    {id: '66666666-6666-6666-6666-666666666666', type: 'table_row', has_children: false,
+      table_row: {cells: [rt('Original metric'), rt('12.5')]}}
+  ];
+  f.migrationReview.expected_snapshot_hash = f.c.rposBridgeMigrationSnapshot_(f.remote.read(PAGE), sha);
+  return f;
+}
+
+test('accepted prose reconciliation audits all originals without inventing a v1 hash', () => {
+  const f = proseMigrationFixture();
+  const audit = clone(f.c.rposBridgeMigrationAudit_(f.stored.receipt_id, f.migrationDeps));
+  assert.equal(audit.status, 'ready_for_review');
+  assert.equal(audit.legacy_block_count, 3);
+  assert.equal(f.state.patches.length, 0);
+  assert.equal(f.deliver().status, 'needs_migration');
+  const before = clone(f.state.blocks);
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.deepEqual(f.state.blocks.slice(0, 3), before);
+  assert.equal(f.state.patches.length, 2);
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.equal(f.deliver().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('prose migration rejects changed table cells or formatting before any write', () => {
+  for (const change of [f => {f.state.blocks[2].table_row.cells[1] = rt('99');},
+    f => {f.state.blocks[1].paragraph.rich_text[0].annotations.bold = false;}]) {
+    const f = proseMigrationFixture(); change(f);
+    assert.equal(f.migrate().status, 'needs_reconciliation');
+    assert.equal(f.state.patches.length, 0);
+  }
+});
+
+test('migrated prose removal or table-cell tamper fails closed without rewriting', () => {
+  for (const change of [f => {f.state.blocks.splice(1, 1);},
+    f => {f.state.blocks[2].table_row.cells[1] = rt('99');}]) {
+    const f = proseMigrationFixture(); assert.equal(f.migrate().status, 'confirmed'); change(f);
+    assert.equal(f.migrate().status, 'delivery_conflict');
+    assert.equal(f.deliver().status, 'delivery_conflict');
+    assert.equal(f.state.patches.length, 2);
+  }
+});
+
+test('unrelated or partial prose heading cannot authorize migration', () => {
+  for (const title of ['A workout on 03-Jan-2026', 'Samsung Health Bridge · UID reconciliation']) {
+    const f = proseMigrationFixture(); f.state.blocks[0].heading_2.rich_text = rt(title);
+    f.migrationReview.expected_snapshot_hash = f.c.rposBridgeMigrationSnapshot_(f.remote.read(PAGE), sha);
+    assert.equal(f.c.rposBridgeMigrationAudit_(f.stored.receipt_id, f.migrationDeps).status, 'needs_reconciliation');
+    assert.equal(f.migrate().status, 'needs_reconciliation');
+    assert.equal(f.state.patches.length, 0);
+  }
+});
+
 test('reviewed existing page delivered/read back; preserves metrics, Notes, alias, and repeated receipt is zero-write', () => {
   const f = fixture();
   assert.equal(f.deliver().status, 'confirmed');
