@@ -19,6 +19,12 @@ por contar casillas de criterios distintos ni por preparar código sin operació
 El nuevo adaptador REST/CLI y la búsqueda de alias tienen pruebas sintéticas.
 Su preparación no equivale a despliegue o entrega automática.
 
+El 05-Oct-2026 Raul eligió el proyecto Apps Script existente, entregó su enlace
+y confirmó que el TXT del scheduler es el código guardado vigente. La captura
+de implementaciones no muestra versiones activas ni archivadas. El nuevo
+receptor JavaScript autentica y persiste un export con pruebas sintéticas;
+`staged` no confirma entrega en Notion. No está instalado ni desplegado.
+
 ## Evidencia faltante para avanzar operativamente
 
 | Pendiente | Criterio verificable | Responsable |
@@ -31,16 +37,14 @@ Su preparación no equivale a despliegue o entrega automática.
 
 ## Información mínima para el siguiente despliegue
 
-1. Enlace al proyecto Apps Script vigente y/o su `Code.gs` actual, sin tokens,
-   con las funciones que crean/buscan capturas Fitness. Drive solo aportó un PDF
-   de revisión en la búsqueda realizada; no se encontró una copia ejecutable.
-2. Identificar el host aprobado donde se ejecutará el coordinador Python y
-   persistirá su única base de recibos. Apps Script no ejecuta este CLI Python;
-   si debe ser el único runtime, hace falta adaptar el coordinador a ese entorno
-   antes de desplegar. No crear otro servicio por suposición.
-3. Configurar la autenticación de Notion mediante el mecanismo de secretos del
-   host, reutilizando la conexión aprobada cuando corresponda. No enviar tokens
-   por chat. El SDK ya disponible no vuelve a pedirse.
+1. Proyecto y código vigente: recibidos y confirmados por Raul. No volver a
+   pedir TXT, enlace ni un número de versión de web app que aún no existe.
+2. Runtime elegido: Apps Script. Completar el coordinador de entrega JavaScript
+   y el vínculo de alias del scheduler antes de instalar/desplegar. El bloque
+   de recepción se prepara en `apps-script/`; no ejecuta el CLI Python.
+3. Configurar autenticación, almacenamiento privado y acceso del endpoint en
+   el entorno al revisar el despliegue concreto. Reutilizar la conexión Notion
+   aprobada; nunca enviar tokens por chat. El SDK no vuelve a pedirse.
 
 Antes de cambiar el porcentaje, acordar una regla de hitos ponderados o un
 criterio explícito de avance parcial. Esto corrige la medición administrativa;

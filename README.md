@@ -22,6 +22,7 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Coordinador v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas. La interfaz de transporte debe conectarse al runner de evidencia existente; no está desplegada.
 - Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
 - Adaptador REST de Notion y CLI para el host aprobado: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado y probado con servicio sintético; no desplegado. Ver `docs/notion-transport.md`.
+- Primer receptor Apps Script: firma HMAC, validación del export, staging duradero con intención previa, bloqueo y lectura posterior. Pruebas locales sintéticas; sin instalación/despliegue ni escritura en Notion. Ver `apps-script/README.md`.
 
 ### Gate pendiente
 
@@ -79,6 +80,14 @@ Requiere Python 3.11+:
 python scripts/validate_sample.py
 python scripts/validate_android_contract.py
 python -m unittest discover -s tests
+```
+
+## Validación Apps Script
+
+Requiere Node.js 24; no dependencias npm ni acceso a cuentas:
+
+```bash
+node --test tests/apps_script_intake.test.cjs
 ```
 
 ## Gobernanza
