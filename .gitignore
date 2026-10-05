@@ -8,3 +8,8 @@ data/private/
 .env.*
 *.keystore
 *.jks
+.gradle/
+**/build/
+local.properties
+app/libs/*.aar
+!app/libs/README.md
