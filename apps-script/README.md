@@ -16,6 +16,9 @@ from a deployed HTTP web app; no deployment version is currently available.
   write intent and complete remote identity/hash/uniqueness readback.
 - `BridgeScheduler.gs`: UID/alias lookup and persistent capture-creation intent.
   Binding instructions: `scheduler-integration.md`.
+- `BridgeMigration.gs`: operator-only read audit and explicitly reviewed conversion
+  of accepted legacy evidence. Retains original blocks, adds v2 plus exact Notes
+  aliases, with a separate durable migration journal. Never called by `doPost`.
 - Receipt states are `writing` / `staged`. `staged` means the export was persisted
   and read back, **not** delivered to Notion. Every response sets
   `notion_confirmed: false`. Separately enabled delivery adds a nested `delivery`
@@ -35,7 +38,7 @@ Synthetic tests are preparation evidence only, not a real outage/device PASS.
 
 ## Integration prerequisites (no deployment in this commit)
 
-Add all five runtime `.gs` files to the existing project after reviewing the change. Do not
+Add all six runtime `.gs` files to the existing project after reviewing the change. Do not
 replace `Code.gs`, install triggers, run scheduler test handlers or modify its
 existing Notion/IFTTT properties. The reviewed snapshot has no `doPost`; recheck
 the live project before adding this endpoint to avoid a duplicate handler.
@@ -206,3 +209,54 @@ Additional official API references:
 - https://developers.notion.com/reference/patch-page
 - https://developers.notion.com/reference/patch-block-children
 - https://developers.notion.com/reference/versioning
+
+## Historical evidence migration (prepared, not applied)
+
+The two accepted real-UID pages currently contain prose hash evidence and archived
+aliases, not managed v2 evidence/exact alias tokens. Their identity and existing
+metric/feedback states were inspected read-only. Conversion is not inferred from
+the fact that those pages already have a Samsung UID.
+
+After private intake staging, `rposBridgeAuditMigrationReceipt(receiptId)` reads
+the unique canonical page twice and returns an opaque snapshot hash, target,
+record hash and legacy block count. It does not return health fields, write a
+review/journal or mutate Notion. A changed snapshot/duplicate target stops it.
+
+Privately review the original export, accepted Python event/hash evidence and
+each archived alias. An old Python hash is never compared to or substituted for
+the new JS record hash. Set `RPOS_BRIDGE_MIGRATION_REVIEW_<receipt_id>` to:
+
+```json
+{
+  "schema_version": "rpos.bridge.migration.review.v1",
+  "receipt_id": "<opaque staged receipt ID>",
+  "record_hash": "<staged JS record hash>",
+  "target_page_id": "<existing canonical page UUID>",
+  "expected_snapshot_hash": "<fresh read-only audit snapshot>",
+  "review_basis": "<original export, old evidence and each exact alias verified>",
+  "aliases": [{"source": "<prior source>", "uid": "<prior ID>",
+    "date": {"start": "<prior date>"}}]
+}
+```
+
+Only then privately enable `BRIDGE_MIGRATION_ENABLED=true` and invoke
+`rposBridgeMigrateReceipt(receiptId)` as the trusted operator. This is independent
+of the scheduler-binding guard so historical conversion can precede enabling
+the wrapper. HTTP clients cannot request migration. Do not leave migration
+enabled after the reviewed batch.
+
+The coordinator requires unique canonical identity, reviewed snapshot/record/
+target, unambiguous aliases and no ordinary-delivery write intent. It preflights
+both payloads, rechecks identity/aliases/snapshot, saves and verifies `attempting`
+before the first PATCH. It changes only Notes (preserving its rich text) and
+appends one v2 block. Source, UID, Date, metrics, Capture State and every legacy
+block remain unchanged. The new evidence binds all legacy block IDs/types/text
+hashes; removal or alteration later fails closed.
+
+A lost append response can confirm by complete legacy/v2/alias/identity readback;
+a Notes-only partial write stays unresolved, without another PATCH. Do not clear
+the migration journal or overwrite historical blocks. Ordinary delivery accepts
+migrated evidence only after its private migration journal is confirmed. Recheck
+scheduler aliases and the single-writer boundary before enabling binding/delivery.
+Notion writes are not atomic; manual/external edits may still race the final read.
+Synthetic tests do not prove real migration or outage recovery.

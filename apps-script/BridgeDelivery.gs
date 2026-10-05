@@ -56,6 +56,14 @@ function rposBridgeDeliver_(receiptId, deps) {
     if (page && intent && intent.page_id !== page.id) rposBridgeFailure_('delivery_conflict');
     if (page && page.evidence && page.evidence.record_hash === stored.record_hash &&
         page.evidence.receipt_id === receiptId) {
+      if (page.evidence.migration) {
+        const migration = deps.migrationJournal && deps.migrationJournal.get(receiptId);
+        if (!migration || migration.state !== 'confirmed' || migration.receipt_id !== receiptId ||
+            migration.record_hash !== stored.record_hash || migration.page_id !== page.id ||
+            migration.review_hash !== page.evidence.migration.review_hash ||
+            JSON.stringify(rposBridgeCanonical_(migration.aliases)) !==
+            JSON.stringify(rposBridgeCanonical_(page.evidence.aliases))) rposBridgeFailure_('needs_migration');
+      }
       // Same-hash remote evidence is still checked against original stored record by the port.
       if (JSON.stringify(rposBridgeCanonical_(page.evidence.record)) !==
           JSON.stringify(rposBridgeCanonical_(stored.export.record))) rposBridgeFailure_('delivery_conflict');
@@ -161,6 +169,7 @@ function rposBridgeDeliverReceipt(receiptId) {
     return rposBridgeDeliver_(receiptId, {
       enabled: true, sha256: rposBridgeSha_, lock: LockService.getScriptLock(),
       journal: rposBridgePropertyJournal_(props, 'RPOS_BRIDGE_DELIVERY_'), reviews: review,
+      migrationJournal: rposBridgePropertyJournal_(props, 'RPOS_BRIDGE_MIGRATION_'),
       store: {find: function(id) { return currentStore().find(id); },
         getIntent: function(id) { return currentStore().getIntent(id); }},
       remote: rposBridgeNotionPort_(rposBridgeNotionHttp_(token), sourceId, rposBridgeSha_)

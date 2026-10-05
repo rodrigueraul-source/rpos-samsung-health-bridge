@@ -13,13 +13,120 @@ const BLOCK = '33333333-3333-3333-3333-333333333333';
 const SCHED = 'R-POS External Scheduler F';
 const EVENT = 'rpos-gym-capture-synthetic';
 const rt = text => [{type: 'text', text: {content: text}, annotations: {bold: true}, plain_text: text}];
+const LEGACY = '44444444-4444-4444-4444-444444444444';
 function context() {
   const c = vm.createContext({Date, JSON, Number, encodeURIComponent, decodeURIComponent});
-  for (const file of ['BridgeIntake.gs', 'BridgeEndpoint.gs', 'BridgeDelivery.gs', 'BridgeNotion.gs', 'BridgeScheduler.gs']) {
+  for (const file of ['BridgeIntake.gs', 'BridgeEndpoint.gs', 'BridgeDelivery.gs', 'BridgeNotion.gs', 'BridgeScheduler.gs', 'BridgeMigration.gs']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script', file), 'utf8'), c);
   }
   return c;
 }
+
+function migrationFixture() {
+  const f = fixture();
+  f.state.identity = {source: 'samsung_health', uid: f.stored.export.record.uid};
+  f.state.blocks = [{id: LEGACY, type: 'paragraph', has_children: false,
+    paragraph: {rich_text: rt('Bridge payload SHA256: `' + 'a'.repeat(64) + '`')}}];
+  f.state.migrations = new Map();
+  f.deps.migrationJournal = f.journal(f.state.migrations);
+  f.migrationReview = {schema_version: 'rpos.bridge.migration.review.v1',
+    receipt_id: f.stored.receipt_id, record_hash: f.stored.record_hash, target_page_id: PAGE,
+    expected_snapshot_hash: f.c.rposBridgeMigrationSnapshot_(f.remote.read(PAGE), sha),
+    review_basis: 'Synthetic original export/accepted v1 evidence and archived alias reviewed',
+    aliases: [{source: SCHED, uid: EVENT, date: {start: '2026-01-03'}}]};
+  f.migrationDeps = {...f.deps, journal: f.journal(f.state.migrations),
+    deliveryJournal: f.deps.journal, reviews: {get: () => f.migrationReview}};
+  f.migrate = () => clone(f.c.rposBridgeMigrate_(f.stored.receipt_id, f.migrationDeps));
+  return f;
+}
+
+test('reviewed migration retains exact legacy blocks, appends v2 and alias; changes only Notes; repeat is zero-write', () => {
+  const f = migrationFixture(), legacy = clone(f.state.blocks);
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.deepEqual(f.state.blocks.slice(0, 1), legacy);
+  assert.equal(f.state.blocks.length, 2);
+  assert.deepEqual(Object.keys(f.state.patches[0].body.properties), ['Notes']);
+  assert.equal(f.state.notes[0].annotations.bold, true);
+  assert.equal(f.remote.read(PAGE).legacy, false);
+  assert.equal(f.migrate().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+  assert.equal(f.deliver().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+  let creates = 0;
+  assert.equal(f.scheduler(() => {creates++;}).reused, true);
+  assert.equal(creates, 0);
+});
+
+for (const [fault, expected] of [['properties', 'unresolved'], ['evidence', 'confirmed']]) {
+  test('migration restart after lost ' + fault + ' response never repeats writes', () => {
+    const f = migrationFixture(); f.state.fail = fault;
+    assert.equal(f.migrate().status, 'delivery_error');
+    assert.equal(f.state.migrations.get(f.stored.receipt_id).state, 'attempting');
+    delete f.state.fail; const writes = f.state.patches.length;
+    assert.equal(f.migrate().status, expected);
+    assert.equal(f.state.patches.length, writes);
+  });
+}
+
+for (const change of [r => {r.expected_snapshot_hash = '0'.repeat(64);}, r => {r.record_hash = '0'.repeat(64);},
+  r => {r.target_page_id = DS;}, r => {r.receipt_id = '0'.repeat(64);}, r => {r.review_basis = '';},
+  r => {r.aliases.push(clone(r.aliases[0]));}, r => {r.aliases[0].uid = '';},
+  r => {r.aliases[0].extra = true;}]) {
+  test('migration refuses stale/wrong/ambiguous reviewed provenance before writes', () => {
+    const f = migrationFixture(); change(f.migrationReview);
+    assert.equal(f.migrate().notion_confirmed, false); assert.equal(f.state.patches.length, 0);
+  });
+}
+
+test('migration absent review or disabled gate makes no writes', () => {
+  const f = migrationFixture(); f.migrationDeps.enabled = false;
+  assert.equal(f.migrate().status, 'disabled');
+  f.migrationDeps.enabled = true; f.migrationReview = null;
+  assert.equal(f.migrate().status, 'needs_reconciliation'); assert.equal(f.state.patches.length, 0);
+});
+
+test('migration cannot override existing ordinary delivery journal or duplicate alias target', () => {
+  const f = migrationFixture(); f.state.intents.set(f.stored.receipt_id, {state: 'attempting'});
+  assert.equal(f.migrate().status, 'delivery_conflict'); assert.equal(f.state.patches.length, 0);
+  f.state.intents.clear(); f.remote.findAlias = () => [DS];
+  assert.equal(f.migrate().status, 'delivery_conflict'); assert.equal(f.state.patches.length, 0);
+});
+
+test('migration journal save failure and concurrent page edit stop before remote writes', () => {
+  const f = migrationFixture(); f.migrationDeps.journal.set = () => {throw Error('private quota failure');};
+  assert.equal(f.migrate().status, 'delivery_error'); assert.equal(f.state.patches.length, 0);
+  const g = migrationFixture(), read = g.remote.read; let reads = 0;
+  g.remote.read = id => {if (++reads === 2) g.state.edited = 'concurrent'; return read(id);};
+  assert.equal(g.migrate().status, 'delivery_conflict'); assert.equal(g.state.patches.length, 0);
+});
+
+test('migrated legacy removal/tamper or archived alias removal fails closed without rewrite', () => {
+  for (const change of [f => {f.state.blocks.shift();},
+    f => {f.state.blocks[0].paragraph.rich_text = rt('Bridge payload SHA256: `' + 'b'.repeat(64) + '`');},
+    f => {f.state.notes = f.state.notes.slice(0, 1);}]) {
+    const f = migrationFixture(); assert.equal(f.migrate().status, 'confirmed'); change(f);
+    assert.equal(f.migrate().status, 'delivery_conflict'); assert.equal(f.state.patches.length, 2);
+    assert.equal(f.deliver().status, 'delivery_conflict'); assert.equal(f.state.patches.length, 2);
+  }
+});
+
+test('read-only migration audit returns stable opaque plan without writes/health fields', () => {
+  const f = migrationFixture();
+  const result = clone(f.c.rposBridgeMigrationAudit_(f.stored.receipt_id, f.migrationDeps));
+  assert.equal(result.status, 'ready_for_review');
+  assert.equal(result.expected_snapshot_hash, f.migrationReview.expected_snapshot_hash);
+  assert.equal(result.legacy_block_count, 1);
+  assert.equal(JSON.stringify(result).includes(f.stored.export.record.uid), false);
+  assert.equal(f.state.patches.length, 0); assert.equal(f.state.migrations.size, 0);
+  f.remote.findUid = () => [PAGE, DS];
+  assert.equal(f.c.rposBridgeMigrationAudit_(f.stored.receipt_id, f.migrationDeps).status, 'delivery_conflict');
+});
+
+test('ordinary delivery cannot accept a migrated block without its confirmed private migration journal', () => {
+  const f = migrationFixture(); assert.equal(f.migrate().status, 'confirmed');
+  f.state.migrations.clear();
+  assert.equal(f.deliver().status, 'needs_migration'); assert.equal(f.state.patches.length, 2);
+});
 function fixture(previous) {
   const c = context();
   const record = {uid: 'synthetic-delivery-001', start_time: '2026-01-03T12:00:00.123Z',
@@ -63,7 +170,7 @@ function fixture(previous) {
     if (method === 'PATCH') {
       state.patches.push(clone({url, body}));
       if (url === '/pages/' + PAGE) {
-        state.identity = {source: c.rposBridgePlain_(body.properties.Source.rich_text),
+        if (body.properties.Source) state.identity = {source: c.rposBridgePlain_(body.properties.Source.rich_text),
           uid: c.rposBridgePlain_(body.properties['Source Record ID'].rich_text)};
         if (body.properties.Notes) state.notes = clone(body.properties.Notes.rich_text);
         state.edited = '2026-01-03T14:00:00.000Z';

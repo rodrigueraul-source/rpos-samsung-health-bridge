@@ -24,6 +24,7 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Adaptador REST de Notion y CLI para el host aprobado: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado y probado con servicio sintético; no desplegado. Ver `docs/notion-transport.md`.
 - Apps Script preparado: receptor HMAC y staging; entrega a páginas existentes con revisión ligada al hash, intención duradera y lectura posterior; wrapper de alias del scheduler. 67 pruebas JavaScript sintéticas; sin instalación, despliegue ni nuevas escrituras reales. Ver `apps-script/README.md`.
 - Android v0.5 preparado: cola privada cifrada, firma del export original, envío/check en primer plano y reintentos con backoff. 24 nuevas pruebas JVM locales; configuración/despliegue/firmado Samsung y UAT real pendientes. Ver `docs/android-delivery.md`.
+- Migración histórica preparada: auditoría de solo lectura, revisión ligada al snapshot, conservación íntegra de bloques anteriores, alias exactos y journal independiente antes de escribir. 84 pruebas JS sintéticas PASS; no aplicada a las dos sesiones reales. Ver `apps-script/README.md`.
 
 ### Gate pendiente
 

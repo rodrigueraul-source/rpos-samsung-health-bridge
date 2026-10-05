@@ -21,12 +21,15 @@ function createGymCapturePage_(cfg, event, plan, now) {
 }
 ```
 
-Add the five runtime `.gs` files. The wrapper uses existing cfg.notionToken,
+Add the six runtime `.gs` files. The wrapper uses existing cfg.notionToken,
 RPOS.fitnessDataSourceId and Script Lock. It reads the full source/ID result AND
 exact archived Notes alias, then reuses one active page. Different matching
 pages stop as conflict. Python v1 alias tokens are compatible, including
 Unicode escaping. Historical aliases archived only as prose need explicit
 review/token migration; date or title alone never identifies a target.
+`BridgeMigration.gs` now prepares that explicit reviewed conversion; audit,
+review, journal/readback and partial-write rules are in `README.md`. It is not
+invoked by an HTTP client or the scheduler. No live migration has been applied.
 
 New capture creation remains owned by the original scheduler. The wrapper
 journals intent before invoking it. An interrupted creation cannot silently

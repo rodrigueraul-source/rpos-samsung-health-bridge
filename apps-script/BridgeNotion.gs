@@ -98,6 +98,7 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
   function evidence(id) {
     const pending = [{id: id, depth: 0}], seen = Object.create(null);
     let managed = null, legacy = false, count = 0;
+    const legacyBlocks = [];
     while (pending.length) {
       const node = pending.pop();
       if (seen[node.id] || node.depth > 30) rposBridgeFailure_('delivery_conflict');
@@ -105,7 +106,10 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
       list('GET', '/blocks/' + rposBridgeUuid_(node.id) + '/children').forEach(function(b) {
         if (++count > 10000 || b.in_trash || b.archived) rposBridgeFailure_('delivery_conflict');
         const text = rposBridgePlain_((b[b.type] || {}).rich_text || []);
-        if (text.indexOf('rpos.notion.evidence.v1\n') === 0 || /Bridge payload SHA256:\s*`?[a-f0-9]{64}/.test(text)) legacy = true;
+        if (text.indexOf('rpos.notion.evidence.v1\n') === 0 || /Bridge payload SHA256:\s*`?[a-f0-9]{64}/.test(text)) {
+          legacy = true;
+          legacyBlocks.push({id: b.id ? rposBridgeUuid_(b.id) : null, type: b.type, text_hash: sha(text)});
+        }
         if (text.indexOf(prefix) === 0) {
           if (b.type !== 'code' || managed) rposBridgeFailure_('delivery_conflict');
           const value = JSON.parse(text.slice(prefix.length));
@@ -120,16 +124,30 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
         if (b.has_children) pending.push({id: rposBridgeUuid_(b.id), depth: node.depth + 1});
       });
     }
-    if (managed && legacy) rposBridgeFailure_('delivery_conflict');
-    return {value: managed, legacy: legacy};
+    legacyBlocks.sort(function(a, b) { return String(a.id).localeCompare(String(b.id)); });
+    if (managed && (legacy || managed.migration)) {
+      const migration = managed.migration;
+      if (!migration || migration.schema_version !== 'rpos.bridge.migration.v1' ||
+          !/^[a-f0-9]{64}$/.test(migration.review_hash || '') ||
+          JSON.stringify(rposBridgeCanonical_(migration.legacy_blocks)) !==
+          JSON.stringify(rposBridgeCanonical_(legacyBlocks)) ||
+          legacyBlocks.some(function(b) { return !b.id; })) rposBridgeFailure_('delivery_conflict');
+      legacy = false; // Explicit v2 migration retains and authenticates every legacy block.
+    }
+    return {value: managed, legacy: legacy, legacy_blocks: legacyBlocks};
   }
   function read(id) {
     const p = page(id), source = rposBridgePlain_(property(p, 'Source'));
     const uid = rposBridgePlain_(property(p, 'Source Record ID')), ev = evidence(rposBridgeUuid_(p.id));
     if (ev.value && (source !== ev.value.source || uid !== ev.value.record.uid)) rposBridgeFailure_('delivery_conflict');
+    const notes = property(p, 'Notes'), lines = rposBridgePlain_(notes).split(/\r?\n/);
+    if (ev.value && !ev.value.aliases.every(function(alias) {
+      return alias && rposBridgeText_(alias.source, 256) && rposBridgeText_(alias.uid, 256) &&
+        lines.indexOf(rposBridgeAlias_(alias.source, alias.uid, sha)) >= 0;
+    })) rposBridgeFailure_('delivery_conflict');
     return {id: rposBridgeUuid_(p.id), source: source, uid: uid, edited: p.last_edited_time,
-      date: p.properties.Date.date, notes: property(p, 'Notes'), evidence: ev.value, legacy: ev.legacy,
-      url: p.url};
+      date: p.properties.Date.date, notes: notes, evidence: ev.value, legacy: ev.legacy,
+      legacy_blocks: ev.legacy_blocks, url: p.url};
   }
   return {
     findUid: function(source, uid) {
@@ -143,6 +161,29 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
       });
     },
     read: read,
+    prepareMigration: function(p, stored, review, reviewHash) {
+      // No canonical identity, Date, metrics, feedback or legacy block is changed.
+      let notes = rposBridgeWritableText_(p.notes);
+      review.aliases.forEach(function(alias) {
+        const marker = rposBridgeAlias_(alias.source, alias.uid, sha);
+        if (rposBridgePlain_(notes).split(/\r?\n/).indexOf(marker) < 0) {
+          notes = notes.concat(rposBridgeRichText_('\n' + marker + '\n' + JSON.stringify(alias)));
+        }
+      });
+      const value = {schema_version: 'rpos.notion.evidence.v2', source: 'samsung_health',
+        receipt_id: stored.receipt_id, record_hash: stored.record_hash, record: stored.export.record,
+        aliases: review.aliases, migration: {schema_version: 'rpos.bridge.migration.v1',
+          review_hash: reviewHash, legacy_blocks: p.legacy_blocks}};
+      const code = {language: 'json', rich_text: rposBridgeRichText_(prefix + JSON.stringify(value))};
+      const prepared = {properties: {Notes: {rich_text: notes}}, code: code};
+      if (notes.length > 100 || code.rich_text.length > 100) rposBridgeFailure_('delivery_conflict');
+      [{properties: prepared.properties}, {children: [{object: 'block', type: 'code', code: code}]}].forEach(function(body) {
+        if (encodeURIComponent(JSON.stringify(body)).replace(/%[A-F0-9]{2}/g, 'x').length > 500000) {
+          rposBridgeFailure_('delivery_conflict');
+        }
+      });
+      return prepared;
+    },
     prepare: function(p, stored) {
       const record = stored.export.record, aliases = [];
       const props = {'Source': {rich_text: rposBridgeRichText_('samsung_health')},
