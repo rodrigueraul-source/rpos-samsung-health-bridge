@@ -57,8 +57,11 @@ execute as owner, anonymous access, endpoint initially OFF. External empty POST
 returned HTTP200/application-json/receipt.v1/status disabled/retryable false.
 Four activation flags OFF were directly verified at 09:38; scheduler legacy.
 Owner readiness audit 09:22 passed: two receipts, two confirmed migration
-journals, fourteen aliases; no delivery/scheduler journals. The complete live
-bundle bytes remain unverified; clipboard export returned only one line.
+journals, fourteen aliases; no delivery/scheduler journals. The complete saved runtime was subsequently copied using the editor-indicated
+Command shortcut: **66,136 bytes / SHA256
+270c4df00594028cf7104a0812a1792179c8821322d24c7eb1bb800ee72f707b**,
+exactly equal to the repository bundle (including its final newline).
+Earlier one-line exports used the wrong editor modifier and are superseded.
 
 Read-only live trigger inventory at the current checkpoint: six existing
 owner time triggers, four Fitness and two Mental Drop, all show 0% errors.
@@ -69,9 +72,31 @@ is metadata evidence, not a complete independent effective-access attestation.
 Writers outside this Apps Script project remain unverified.
 
 The APK is not installed or physically tested. New-package consent/private
-configuration, reviewed backend activation/scheduler binding, signed delivery,
+configuration, reviewed backend activation/scheduler cutover, signed delivery,
 Android Keystore/queue restart and actual uncertain-result recovery remain
 open. Accepted v0.4 acquisition checkpoints remain valid and are not repeated.
 Neither release automatically reads or uploads in the background. BUILD35
 remains the approved Registry baseline; this build does not establish Bridge
 PASS, BR05/BR06 closure or an 80% completion claim.
+
+## Live wrapper and final source verification
+
+Saved Código.gs was copied for private static review: **40,432 bytes / SHA256
+ea3e36898ec4d35896387ef478730b2dae5ef00223343284d6a08ce3b9195086**.
+There is one createGymCapturePage_ definition and one
+rposBridgeLegacyCreateGymCapturePage_ definition. The wrapper contains only
+the exact legacy return with cfg/event/plan/now; the live Fitness source matches
+the expected source. V8 syntax compilation without execution passes for both
+files. A column-zero function-declaration scan finds 42 scheduler and 43 runtime
+names, with zero shared names. Recorded entry callers are weekday/Saturday
+capture plus two existing test operators. No scheduler operator was executed
+and no notification, trigger, flag, receipt or Notion data write was performed.
+
+Source commit ca91da4d5fa0ceddcdae9ca40529fcbf176dc0e6 has
+**Validate MVP #82 SUCCESS** and **Android Mock Build #59 SUCCESS**.
+This final documentation checkpoint may have a later commit SHA; APK-producing
+application sources are unchanged. Full saved-source comparison and wrapper
+review are complete; cutover is still OFF/legacy and awaits the physical pilot
+window/private device setup. The saved-head comparison is not an independent
+export of Google's version1 deployment snapshot. External editors/writers
+remain outside this source-review scope.

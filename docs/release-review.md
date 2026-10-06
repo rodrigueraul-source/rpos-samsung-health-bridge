@@ -60,7 +60,8 @@ wrappers; other formatting or bodies require source review, never execution.
    disabled PASS. Earlier sign-in502 is resolved. All activation flags OFF.
 2. **Read-only audit accepted:** owner09:22 live_reads_pass_activation_not_approved;
    two receipts/two confirmed migration journals/fourteen aliases; legacy wrapper.
-   Full live source-byte comparison and writers outside this project remain open.
+   Full saved runtime byte comparison and exact legacy-wrapper review subsequently
+   PASS; writers outside this project remain outside review scope.
 3. **Signing alternative prepared:** old v0.4 certificate identified but its
    private key unavailable. The dedicated signed delivery package coexists with
    the old app, whose data/queue are preserved. New signing recovery retained
@@ -70,8 +71,9 @@ wrappers; other formatting or bodies require source review, never execution.
    PASS; 29 actual Android Gradle unit cases PASS. Signed artifact verification
    and certificate/package/Samsung provider/16 KiB alignment PASS. Details in
    `android-delivery-build-evidence.md`. Device operation remains unproven.
-5. **Cutover open:** review live bytes, scheduler binding, effective receipt
-   access and single writer before changing flags/wrapper. Six existing owner
+5. **Cutover open:** saved runtime bytes and legacy-wrapper definitions are verified. Complete
+   the controlled activation/cutover and private device pilot before delivery;
+   preserve single-writer policy and effective receipt-access review. Six existing owner
    time triggers observed; no new trigger added.
 6. **Physical handoff open:** install the new separate Samsung package; grant
    its own Exercise READ consent, configure auth privately, and prove queue,

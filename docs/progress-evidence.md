@@ -26,7 +26,8 @@ propietario/acceso sin sesión Google. POST vacío externo devuelve HTTP200,
 JSON receipt.v1/status disabled/retryable false. Los cuatro flags siguen OFF;
 wrapper legacy. Auditoría del propietario09:22 PASS: dos recibos, dos journals
 de migración confirmados y catorce alias. No repetir esos gates aceptados.
-La comparación completa de bytes live, writers externos y cutover siguen
+El runtime guardado coincide byte por byte con el bundle del repo y el
+wrapper legacy único fue revisado; writers externos y cutover siguen
 pendientes; la consulta de metadata de carpeta muestra shared=false/owner-only
 y raíz personal como parent, sin acreditar por sí sola acceso efectivo completo.
 
@@ -37,8 +38,8 @@ firmado/verificado, paquete `com.rpos.bridge.delivery`, v0.5.0-delivery.
 Comparte el proveedor Samsung real y conserva la app anterior al instalarse
 por separado. Clave dedicada y respaldo privado retenidos; el certificado
 anterior fue recuperado, pero no su clave privada. No hubo instalación física,
-desinstalación, migración de cola ni activación. Evidencia/hash/certificado
-en `android-delivery-build-evidence.md`; siguiente gate: una prueba física
+desinstalación, migración de cola ni activación. Evidencia/hash/certificado y comparación de fuente
+en `android-delivery-build-evidence.md`; CI ca91da4#82/#59 SUCCESS; siguiente gate: una prueba física
 consolidada y configuración privada tras el cutover revisado.
 
 ## Evidencia faltante para avanzar operativamente
