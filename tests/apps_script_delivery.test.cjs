@@ -682,12 +682,14 @@ test('doPost delivery-OFF acknowledgement uses fresh native read-only port and k
   assert.equal(JSON.parse(f.c.doPost(event).text).delivery, undefined); assert.equal(methods.length, count);
   props.set('BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true'); props.set('BRIDGE_FITNESS_DATA_SOURCE_ID', BLOCK);
   assert.equal(JSON.parse(f.c.doPost(event).text).delivery.status, 'not_configured'); assert.equal(methods.length, count);
-  props.set('BRIDGE_FITNESS_DATA_SOURCE_ID', DS);
+  props.set('BRIDGE_FITNESS_DATA_SOURCE_ID', DS.replace(/-/g, '').toUpperCase());
+  assert.equal(JSON.parse(f.c.doPost(event).text).delivery.status, 'confirmed');
+  const normalizedCount = methods.length;
   f.c.rposBridgeNotionPort_ = http => ({findUid: () => {
     http.request('PATCH', '/pages/' + PAGE, {}); return [PAGE];
   }});
   assert.equal(JSON.parse(f.c.doPost(event).text).delivery.status, 'delivery_conflict');
-  assert.equal(methods.length, count); assert.equal(f.state.patches.length, 2);
+  assert.equal(methods.length, normalizedCount); assert.equal(f.state.patches.length, 2);
 });
 
 test('acknowledgement catches UID ownership changing during the fresh evidence read', () => {

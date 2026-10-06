@@ -169,6 +169,7 @@ function rposBridgeAcknowledgeReceipt_(receipt, properties) {
       return {schema_version: 'rpos.exercise.delivery.receipt.v1',
         status: 'not_configured', notion_confirmed: false};
     }
+    const normalizedSourceId = rposBridgeUuid_(sourceId);
     let store;
     function currentStore() { return store || (store = rposBridgeDriveStore_(folderId, properties)); }
     return rposBridgeAcknowledgement_(receipt, {
@@ -181,10 +182,10 @@ function rposBridgeAcknowledgeReceipt_(receipt, properties) {
         const http = rposBridgeNotionHttp_(token);
         const readOnly = {request: function(method, path, payload) {
           if (method !== 'GET' && !(method === 'POST' &&
-              path === '/data_sources/' + sourceId + '/query')) rposBridgeFailure_('delivery_conflict');
+              path === '/data_sources/' + normalizedSourceId + '/query')) rposBridgeFailure_('delivery_conflict');
           return http.request(method, path, payload);
         }};
-        return rposBridgeNotionPort_(readOnly, sourceId, rposBridgeSha_);
+        return rposBridgeNotionPort_(readOnly, normalizedSourceId, rposBridgeSha_);
       }
     });
   } catch (ignore) {
