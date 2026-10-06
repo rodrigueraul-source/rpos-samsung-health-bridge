@@ -316,9 +316,13 @@ function doPost(e) {
         }
       });
       // Intake releases its lock before optional delivery takes the same Script Lock.
-      // Off by default; the outer staged receipt never claims Notion confirmation.
+      // The outer staged receipt never claims Notion confirmation. With delivery OFF,
+      // only acknowledge a prior confirmed journal after fresh read-only evidence checks.
       if (result.status === 'staged' && properties.getProperty('BRIDGE_DELIVERY_ENABLED') === 'true') {
         result.delivery = rposBridgeDeliverReceipt(result.receipt_id);
+      } else if (result.status === 'staged') {
+        const acknowledgement = rposBridgeAcknowledgeReceipt_(result, properties);
+        if (acknowledgement) result.delivery = acknowledgement;
       }
     }
   } catch (ignore) {
@@ -326,6 +330,105 @@ function doPost(e) {
   }
   // ContentService has no custom HTTP status API: clients must inspect JSON status.
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Called only after authenticated intake. Never writes a journal or remote page.
+function rposBridgeAcknowledgement_(receipt, deps) {
+  let locked = false;
+  function response(status) {
+    return {schema_version: 'rpos.exercise.delivery.receipt.v1', status: status,
+      notion_confirmed: status === 'confirmed'};
+  }
+  try {
+    if (!receipt || receipt.status !== 'staged') return null;
+    const id = receipt.receipt_id;
+    if (!/^[a-f0-9]{64}$/.test(id || '') || !/^[a-f0-9]{64}$/.test(receipt.record_hash || '')) {
+      rposBridgeFailure_('delivery_conflict');
+    }
+    locked = deps.lock.tryLock(1000);
+    if (!locked) return response('busy');
+    const intent = deps.journal.get(id);
+    if (!intent) return null; // A stored receipt alone is not a delivery confirmation.
+    if (intent.receipt_id !== id || intent.record_hash !== receipt.record_hash ||
+        ['attempting', 'confirmed'].indexOf(intent.state) < 0) rposBridgeFailure_('delivery_conflict');
+    if (intent.state === 'attempting') return response('unresolved');
+    const pageId = deps.uuid(intent.page_id);
+    const found = deps.store.find(id);
+    if (found.length !== 1) rposBridgeFailure_('storage_unresolved');
+    const stored = found[0].value;
+    rposBridgeVerifyStored_(stored, id, receipt.record_hash, deps);
+    const intake = deps.store.getIntent(id);
+    if (!intake || intake.state !== 'staged' || intake.receipt_id !== id ||
+        intake.record_hash !== receipt.record_hash || intake.file_id !== found[0].id) {
+      rposBridgeFailure_('storage_unresolved');
+    }
+    const uid = stored.export.record.uid;
+    const remote = deps.remote(); // Lazy: no Notion access for ordinary pending intake.
+    const matches = remote.findUid('samsung_health', uid);
+    if (matches.length !== 1 || matches[0] !== pageId) rposBridgeFailure_('delivery_conflict');
+    const page = remote.read(pageId);
+    const evidence = page.evidence;
+    if (page.id !== pageId || page.source !== 'samsung_health' || page.uid !== uid ||
+        !evidence || evidence.receipt_id !== id || evidence.record_hash !== receipt.record_hash ||
+        JSON.stringify(rposBridgeCanonical_(evidence.record)) !==
+          JSON.stringify(rposBridgeCanonical_(stored.export.record))) rposBridgeFailure_('delivery_conflict');
+    if (evidence.migration) {
+      const migration = deps.migrationJournal.get(id);
+      if (!migration || migration.state !== 'confirmed' || migration.receipt_id !== id ||
+          migration.record_hash !== receipt.record_hash || migration.page_id !== pageId ||
+          migration.review_hash !== evidence.migration.review_hash ||
+          JSON.stringify(rposBridgeCanonical_(migration.aliases)) !==
+            JSON.stringify(rposBridgeCanonical_(evidence.aliases))) rposBridgeFailure_('needs_migration');
+    }
+    const unique = remote.findUid('samsung_health', uid);
+    if (unique.length !== 1 || unique[0] !== pageId) rposBridgeFailure_('delivery_conflict');
+    if (JSON.stringify(rposBridgeCanonical_(deps.journal.get(id))) !==
+        JSON.stringify(rposBridgeCanonical_(intent))) rposBridgeFailure_('delivery_conflict');
+    return response('confirmed');
+  } catch (error) {
+    const safe = ['busy', 'storage_unresolved', 'delivery_conflict', 'needs_migration'];
+    return response(safe.indexOf(error.bridgeCode) >= 0 ? error.bridgeCode :
+      error.bridgeCode === 'storage_conflict' || error.bridgeCode === 'invalid_request' ?
+        'delivery_conflict' : 'delivery_error');
+  } finally {
+    if (locked) { try { deps.lock.releaseLock(); } catch (ignore) {} }
+  }
+}
+
+function rposBridgeAcknowledgeReceipt_(receipt, properties) {
+  try {
+    if (!properties.getProperty('RPOS_BRIDGE_DELIVERY_' + receipt.receipt_id)) return null;
+    if (properties.getProperty('BRIDGE_SCHEDULER_BINDING_REVIEWED') !== 'true') return null;
+    const folderId = properties.getProperty('BRIDGE_RECEIPT_FOLDER_ID');
+    const token = properties.getProperty('NOTION_TOKEN');
+    const sourceId = properties.getProperty('BRIDGE_FITNESS_DATA_SOURCE_ID');
+    if (!folderId || !token || !sourceId || typeof RPOS === 'undefined' ||
+        rposBridgeUuid_(sourceId) !== rposBridgeUuid_(RPOS.fitnessDataSourceId)) {
+      return {schema_version: 'rpos.exercise.delivery.receipt.v1',
+        status: 'not_configured', notion_confirmed: false};
+    }
+    let store;
+    function currentStore() { return store || (store = rposBridgeDriveStore_(folderId, properties)); }
+    return rposBridgeAcknowledgement_(receipt, {
+      lock: LockService.getScriptLock(), sha256: rposBridgeSha_, uuid: rposBridgeUuid_,
+      journal: rposBridgePropertyJournal_(properties, 'RPOS_BRIDGE_DELIVERY_'),
+      migrationJournal: rposBridgePropertyJournal_(properties, 'RPOS_BRIDGE_MIGRATION_'),
+      store: {find: function(id) { return currentStore().find(id); },
+        getIntent: function(id) { return currentStore().getIntent(id); }},
+      remote: function() {
+        const http = rposBridgeNotionHttp_(token);
+        const readOnly = {request: function(method, path, payload) {
+          if (method !== 'GET' && !(method === 'POST' &&
+              path === '/data_sources/' + sourceId + '/query')) rposBridgeFailure_('delivery_conflict');
+          return http.request(method, path, payload);
+        }};
+        return rposBridgeNotionPort_(readOnly, sourceId, rposBridgeSha_);
+      }
+    });
+  } catch (ignore) {
+    return {schema_version: 'rpos.exercise.delivery.receipt.v1',
+      status: 'delivery_error', notion_confirmed: false};
+  }
 }
 // END BridgeEndpoint.gs
 

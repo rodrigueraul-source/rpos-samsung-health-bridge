@@ -4,7 +4,14 @@ Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness*
 
 ## Estado actual
 
-**UNPARKED · BUILD · 35%**
+**UNPARKED · BUILD · 66.67% · 4/6 hitos verificados**
+
+Entrega canónica acotada y continuidad scheduler confirmadas el 06-Oct-2026:
+registro SDK/aliases/métricas conservados, replay sin escrituras y cero
+sesiones duplicadas. Intake y binding ON; entrega continua/migración OFF.
+El acknowledgement del teléfono está preparado/probado, no desplegado.
+Recuperación física y cierre Samsung siguen pendientes; ver
+`docs/progress-evidence.md`. No es Bridge PASS ni una estimación de esfuerzo.
 
 La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Android faltante sin reemplazar el MVP Python ya validado.
 

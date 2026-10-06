@@ -577,3 +577,157 @@ test('doPost dispatches optional delivery only after authenticated staging; oute
   assert.equal(result.notion_confirmed, false); assert.equal(result.delivery.notion_confirmed, true);
   assert.equal(deliveryCalls, 1);
 });
+
+function ackFixture(confirmed = true) {
+  const f = fixture();
+  if (confirmed) assert.equal(f.deliver().status, 'confirmed');
+  const receipt = clone(f.c.rposBridgeResult_('staged', f.stored.receipt_id, f.stored.record_hash));
+  let reads = 0;
+  const deps = {...f.deps, uuid: f.c.rposBridgeUuid_, migrationJournal: f.journal(new Map()),
+    journal: {get: f.deps.journal.get}, // No mutation capability is passed to acknowledgement.
+    remote: () => {reads++; return f.remote;}};
+  return {...f, receipt, ackDeps: deps, reads: () => reads,
+    ack: () => clone(f.c.rposBridgeAcknowledgement_(receipt, deps))};
+}
+
+test('confirmed acknowledgement checks fresh evidence without journal or remote mutations across restart', () => {
+  const f = ackFixture(); const before = JSON.stringify([...f.state.intents]);
+  assert.equal(f.ack().status, 'confirmed'); assert.equal(f.ack().notion_confirmed, true);
+  const restarted = context();
+  assert.equal(restarted.rposBridgeAcknowledgement_(f.receipt, f.ackDeps).status, 'confirmed');
+  assert.equal(f.state.patches.length, 2); assert.equal(JSON.stringify([...f.state.intents]), before);
+  assert.equal(f.reads(), 3);
+});
+
+test('pending journal keeps staged without Notion reads; uncertain intent cannot acknowledge or write', () => {
+  const f = ackFixture(false); assert.equal(f.ack(), null); assert.equal(f.reads(), 0);
+  f.state.intents.set(f.stored.receipt_id, {receipt_id: f.stored.receipt_id,
+    record_hash: f.stored.record_hash, page_id: PAGE, state: 'attempting'});
+  assert.equal(f.ack().status, 'unresolved'); assert.equal(f.reads(), 0);
+  assert.equal(f.state.patches.length, 0);
+});
+
+for (const [name, change, status] of [
+  ['changed receipt hash', f => {f.receipt.record_hash = '0'.repeat(64);}, 'delivery_conflict'],
+  ['wrong journal target', f => {f.state.intents.get(f.stored.receipt_id).page_id = BLOCK;}, 'delivery_conflict'],
+  ['missing original file', f => {f.ackDeps.store.find = () => [];}, 'storage_unresolved'],
+  ['duplicate original file', f => {f.ackDeps.store.find = () => [{}, {}];}, 'storage_unresolved'],
+  ['changed stored record', f => {f.stored.export.record.custom_title = 'changed';}, 'delivery_conflict'],
+  ['missing intake intent', f => {f.ackDeps.store.getIntent = () => null;}, 'storage_unresolved'],
+  ['missing current UID', f => {f.state.hidden = true;}, 'delivery_conflict'],
+  ['duplicate current UID', f => {f.ackDeps.remote = () => ({findUid: () => [PAGE, BLOCK]});}, 'delivery_conflict'],
+  ['missing evidence', f => {f.state.blocks = [];}, 'delivery_conflict'],
+  ['tampered evidence', f => {const text=f.state.blocks[0].code.rich_text[0].text;
+    const lines=text.content.split('\n');const e=JSON.parse(lines.slice(1).join('\n'));
+    e.record.custom_title='changed';text.content=lines[0]+'\n'+JSON.stringify(e);}, 'delivery_conflict'],
+  ['raw remote error', f => {f.ackDeps.remote = () => {throw Error('SECRET HEALTH');};}, 'delivery_error'],
+  ['journal changed during readback', f => {const read=f.remote.read;f.remote.read=id=>{const p=read(id);
+    f.state.intents.get(f.stored.receipt_id).state='attempting';return p;};}, 'delivery_conflict']
+]) {
+  test('acknowledgement refuses ' + name + ' without changing remote data', () => {
+    const f = ackFixture(); change(f); const result = f.ack();
+    assert.equal(result.status, status); assert.equal(result.notion_confirmed, false);
+    assert.equal(f.state.patches.length, 2); assert.equal(JSON.stringify(result).includes('SECRET'), false);
+  });
+}
+
+test('acknowledgement lock contention returns retry and does not release another owner lock', () => {
+  const f = ackFixture(); const before = f.state.releases;
+  f.ackDeps.lock.tryLock = () => false;
+  assert.equal(f.ack().status, 'busy'); assert.equal(f.reads(), 0); assert.equal(f.state.releases, before);
+});
+
+test('acknowledgement requires migration provenance when confirming migrated evidence', () => {
+  const f = migrationFixture(); assert.equal(f.migrate().status, 'confirmed');
+  assert.equal(f.deliver().status, 'confirmed');
+  const receipt = f.c.rposBridgeResult_('staged', f.stored.receipt_id, f.stored.record_hash);
+  const deps = {...f.deps, uuid: f.c.rposBridgeUuid_, remote: () => f.remote};
+  assert.equal(f.c.rposBridgeAcknowledgement_(receipt, deps).status, 'confirmed');
+  f.state.migrations.clear();
+  assert.equal(f.c.rposBridgeAcknowledgement_(receipt, deps).status, 'needs_migration');
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('doPost delivery-OFF acknowledgement uses fresh native read-only port and keeps all activation flags unchanged', () => {
+  const f = ackFixture(); const props = new Map([
+    ['BRIDGE_INTAKE_ENABLED', 'true'], ['BRIDGE_INTAKE_HMAC_KEY', 'a'.repeat(64)],
+    ['BRIDGE_RECEIPT_FOLDER_ID', 'synthetic-folder'], ['BRIDGE_DELIVERY_ENABLED', 'false'],
+    ['BRIDGE_MIGRATION_ENABLED', 'false'], ['BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true'],
+    ['NOTION_TOKEN', 'synthetic-token'], ['BRIDGE_FITNESS_DATA_SOURCE_ID', DS],
+    ['RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id, JSON.stringify(f.state.intents.get(f.stored.receipt_id))]
+  ]);
+  const before = JSON.stringify([...props]); const methods = [];
+  f.c.PropertiesService = {getScriptProperties: () => ({getProperty: k => props.get(k),
+    setProperty: () => {throw Error('unexpected journal mutation');}})};
+  f.c.LockService = {getScriptLock: () => f.ackDeps.lock};
+  f.c.ContentService = {MimeType: {JSON: 'json'}, createTextOutput: text => ({text, setMimeType() {return this;}})};
+  f.c.RPOS = {fitnessDataSourceId: DS}; f.c.rposBridgeSha_ = sha;
+  f.c.rposBridgeDriveStore_ = () => f.deps.store;
+  f.c.rposBridgeNotionHttp_ = () => ({request(method, path, payload) {
+    assert.ok(method === 'GET' || method === 'POST' && path === '/data_sources/' + DS + '/query');
+    methods.push(method); return f.http.request(method, path, payload);
+  }});
+  f.c.rposBridgeDeliverReceipt = () => {throw Error('delivery remains OFF');};
+  let staged = true;
+  f.c.rposBridgeHandle_ = () => staged ? clone(f.receipt) : f.c.rposBridgeResult_('unauthorized');
+  const event = {postData: {type: 'application/json', contents: '{}'}};
+  const result = JSON.parse(f.c.doPost(event).text);
+  assert.equal(result.status, 'staged'); assert.equal(result.notion_confirmed, false);
+  assert.equal(result.delivery.status, 'confirmed'); assert.equal(result.delivery.notion_confirmed, true);
+  assert.equal(result.receipt_id, f.stored.receipt_id); assert.equal(result.record_hash, f.stored.record_hash);
+  assert.equal(JSON.stringify([...props]), before); assert.equal(f.state.patches.length, 2);
+  staged = false; const count = methods.length;
+  assert.equal(JSON.parse(f.c.doPost(event).text).status, 'unauthorized'); assert.equal(methods.length, count);
+  props.set('BRIDGE_SCHEDULER_BINDING_REVIEWED', 'false'); staged = true;
+  assert.equal(JSON.parse(f.c.doPost(event).text).delivery, undefined); assert.equal(methods.length, count);
+  props.set('BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true'); props.set('BRIDGE_FITNESS_DATA_SOURCE_ID', BLOCK);
+  assert.equal(JSON.parse(f.c.doPost(event).text).delivery.status, 'not_configured'); assert.equal(methods.length, count);
+  props.set('BRIDGE_FITNESS_DATA_SOURCE_ID', DS);
+  f.c.rposBridgeNotionPort_ = http => ({findUid: () => {
+    http.request('PATCH', '/pages/' + PAGE, {}); return [PAGE];
+  }});
+  assert.equal(JSON.parse(f.c.doPost(event).text).delivery.status, 'delivery_conflict');
+  assert.equal(methods.length, count); assert.equal(f.state.patches.length, 2);
+});
+
+test('acknowledgement catches UID ownership changing during the fresh evidence read', () => {
+  const f = ackFixture(); const read = f.remote.read;
+  f.remote.read = id => {const p = read(id); f.state.hidden = true; return p;};
+  assert.equal(f.ack().status, 'delivery_conflict'); assert.equal(f.state.patches.length, 2);
+});
+
+test('real signed intake can acknowledge a prior delivery without any new remote write', () => {
+  const f = ackFixture(); const properties = new Map([
+    ['BRIDGE_INTAKE_ENABLED', 'true'], ['BRIDGE_INTAKE_HMAC_KEY', 'a'.repeat(64)],
+    ['BRIDGE_RECEIPT_FOLDER_ID', 'synthetic-folder'], ['BRIDGE_DELIVERY_ENABLED', 'false'],
+    ['BRIDGE_MIGRATION_ENABLED', 'false'], ['BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true'],
+    ['NOTION_TOKEN', 'synthetic-token'], ['BRIDGE_FITNESS_DATA_SOURCE_ID', DS],
+    ['RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id, JSON.stringify(f.state.intents.get(f.stored.receipt_id))]
+  ]);
+  const propertyStore={getProperty:k=>properties.get(k),setProperty:()=>{throw Error('ack changed properties');}};
+  f.c.PropertiesService={getScriptProperties:()=>propertyStore};
+  f.c.LockService={getScriptLock:()=>f.deps.lock};
+  f.c.ContentService={MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})};
+  f.c.Utilities={Charset:{UTF_8:'utf8'},DigestAlgorithm:{SHA_256:'sha256'},
+    newBlob:s=>({getBytes:()=>[...Buffer.from(s,'utf8')]}),
+    computeDigest:(alg,s)=>[...crypto.createHash('sha256').update(s).digest()],
+    computeHmacSha256Signature:(s,k)=>[...crypto.createHmac('sha256',k).update(s).digest()]};
+  f.c.RPOS={fitnessDataSourceId:DS}; f.c.rposBridgeNotionHttp_=()=>f.http;
+  let stagingSaves=0;
+  f.c.rposBridgeDriveStore_=()=>({...f.deps.store,setIntent:(id,value)=>{
+    stagingSaves++;assert.equal(id,f.stored.receipt_id);assert.equal(value.state,'staged');
+  },create:()=>{throw Error('duplicate receipt create');}});
+  const sent_at=Math.floor(Date.now()/1000),payload_json=JSON.stringify(f.stored.export);
+  const signature=crypto.createHmac('sha256','a'.repeat(64)).update(
+    'rpos.exercise.intake.v1\n'+sent_at+'\n'+sha(payload_json)).digest('hex');
+  const event={postData:{type:'application/json',contents:JSON.stringify({
+    schema_version:'rpos.exercise.intake.v1',sent_at,payload_json,signature})}};
+  const result=JSON.parse(f.c.doPost(event).text);
+  assert.equal(result.status,'staged');assert.equal(result.delivery.status,'confirmed');
+  assert.equal(result.notion_confirmed,false);assert.equal(result.delivery.notion_confirmed,true);
+  assert.equal(stagingSaves,1);assert.equal(f.state.patches.length,2);
+  const request=JSON.parse(event.postData.contents);request.signature='0'.repeat(64);
+  event.postData.contents=JSON.stringify(request);
+  assert.equal(JSON.parse(f.c.doPost(event).text).status,'unauthorized');
+  assert.equal(stagingSaves,1);assert.equal(f.state.patches.length,2);
+});

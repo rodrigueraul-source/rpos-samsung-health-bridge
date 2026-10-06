@@ -2,7 +2,7 @@
 
 La Master WBS V2.0 conserva el 35% como baseline histórico sin una fórmula
 de pesos. Tras la instrucción de Raul del 06-Oct de medir el avance real,
-el checkpoint actual registra **50% por hitos verificados: 3 de 6**.
+el checkpoint actual registra **66.67% por hitos verificados: 4 de 6**.
 Es un conteo explícito de seis hitos de integración, no una estimación del
 esfuerzo consumido o del tiempo restante. No representa Bridge PASS ni 80%.
 La corrección de aliases y documentación no suman otro hito por sí solas.
@@ -12,11 +12,11 @@ La corrección de aliases y documentación no suman otro hito por sí solas.
 | 1. Build propio reproducible, SDK fijado y APK firmado | Verificado | Build/CI, 29 pruebas Android, firma/paquete verificados |
 | 2. Lectura física propia y contrato de origen | Verificado | UID/tiempos/segmentos reales, READ permitido/denegado/restaurado y relectura |
 | 3. Recepción firmada privada y cola de actividad | Verificado | Primer envío real en Drive privado, hash/UID únicos, reapertura y recheck aceptados |
-| 4. Integración operativa a Notion y continuidad scheduler | Pendiente | Conciliación de métricas/aliases, único writer y entrega/cutover revisados |
+| 4. Integración operativa a Notion y continuidad scheduler | Verificado en operación acotada | Apps Script confirmed17:39:24, replay sin escrituras, scheduler reuse y readback independiente; 65 sesiones sin duplicados, registro/aliases/métricas conservados |
 | 5. Recuperación real ante resultado incierto y reinicio de proceso/OS | Pendiente | Recuperación física Android/backend; pruebas sintéticas no cierran el hito |
 | 6. Hardening Samsung y cierre operativo repetible | Pendiente | Otros errores físicos Samsung, validación operacional/release |
 
-Los tres hitos aceptados tienen evidencia técnica/física previa al cambio de
+Los cuatro hitos aceptados tienen evidencia técnica/física previa al cambio de
 medición. SA-RPOS-VERTICAL-001 sigue separado; no se cierra por este conteo.
 
 ## Corrección de alias histórico revisado · 06-Oct
@@ -29,9 +29,13 @@ se vuelven a comprobar antes de guardar intención/escribir. La entrega conserva
 alias actual e históricos en Notes/v2; el scheduler reutiliza la página y el
 replay no añade escrituras. Los aliases no se infieren del título o la fecha.
 
-La corrección está en el repositorio y bundle generado; **no instalada ni
-desplegada** en Apps Script. El piloto vigente mantiene intake ON y delivery,
-migration y binding OFF, con wrapper legacy. No cambian métricas ni Gym V4.
+La revisión live17:09 validó cuatro fingerprints críticos. El propietario
+ejecutó el cutover17:38:49–17:39:24: entrega canónica confirmed, replay
+sin escrituras y reutilización scheduler. Readback independiente confirmó
+registro original, receipt/hash, alias screenshot/histórico y conservación de
+métricas, feedback, detalle y fecha. Intake y binding ON; entrega continua y
+migración OFF. No se acredita hash de todo el proyecto ni prueba física de
+outage. Endpoint publicado versión1 no actualizado por Guardar.
 
 ## Hitos comprobados al 05-Oct-2026
 
@@ -46,7 +50,7 @@ migration y binding OFF, con wrapper legacy. No cambian métricas ni Gym V4.
 El nuevo adaptador REST/CLI y la búsqueda de alias tienen pruebas sintéticas.
 Su preparación no equivale a despliegue o entrega automática.
 
-## Checkpoint actual · 06-Oct-2026
+## Checkpoint histórico · 06-Oct-2026 09:40
 
 La aplicación web versión1 se publicó09:40 con aprobación explícita09:33:
 propietario/acceso sin sesión Google. POST vacío externo devuelve HTTP200,
@@ -82,7 +86,7 @@ específica; delivery/migration/binding permanecen OFF y scheduler legacy.
 Faltan configuración HMAC privada, staging/persistencia/replay físicos y
 posterior reconciliación/cutover/entrega/recuperación real. BUILD35% conservado.
 
-## Evidencia faltante para avanzar operativamente
+## Backlog histórico de preparación · actualizado por checkpoint vigente
 
 | Pendiente | Criterio verificable | Responsable |
 | --- | --- | --- |
@@ -128,3 +132,20 @@ migración revisada. La entrega exige revisión del vínculo scheduler/alias y
 la fuente Fitness exacta. Notion no ofrece transacción entre estas escrituras;
 editores externos no participan en Script Lock. Código y pruebas sintéticas
 no cierran BR01/02/03 ni recuperación real. BUILD 35% permanece vigente.
+
+
+## Acknowledgement de una entrega confirmada · preparado, no desplegado
+
+El endpoint actualizado conserva outer staged/notion_confirmed=false y agrega
+la respuesta delivery.confirmed sólo tras intake autenticado, journal ordinary
+confirmado, archivo/intent/hash originales, UID remoto único, evidencia íntegra
+y relectura del journal. Si falta journal, sigue staged sin leer Notion.
+Attempting no autoriza reescritura; lock ocupado/error transitorio permanece
+reintentable. La ruta Notion sólo acepta GET y POST query, sin PATCH/create ni
+cambios de flags/journals de entrega. Intake mantiene su comprobación habitual
+y puede reafirmar el intent staged existente.
+
+La app v0.5 ya comprende este contrato nested; no requiere nuevo APK. Preparar
+código/pruebas no suma progreso ni actualiza el endpoint versionado. Falta
+instalación/publicación en la implementación existente y validación física de
+cola/reinicio. Tests de servicios simulados no prueban recuperación del OS.

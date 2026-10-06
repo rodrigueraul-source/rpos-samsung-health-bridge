@@ -280,3 +280,26 @@ migrated evidence only after its private migration journal is confirmed. Recheck
 scheduler aliases and the single-writer boundary before enabling binding/delivery.
 Notion writes are not atomic; manual/external edits may still race the final read.
 Synthetic tests do not prove real migration or outage recovery.
+
+
+## Read-only acknowledgement while continuous delivery remains OFF
+
+After authenticated staging, `doPost` may return nested delivery confirmation
+for a prior confirmed ordinary delivery journal. It takes Script Lock, validates
+the same unique stored file/hash/intake intent, checks current Notion UID and
+original v2 evidence, and rechecks uniqueness/journal before responding.
+Migration evidence also requires its matching confirmed migration journal.
+No missing journal is inferred from a matching page: ordinary pending intake
+stays staged without Notion reads. Attempting remains unresolved.
+
+This route never calls the delivery worker, modifies activation flags or
+delivery journals, or PATCHes/creates Notion data. Its HTTP adapter permits only
+GET and the selected Fitness data-source POST query. Outer intake remains
+staged/notion_confirmed=false; existing Android v0.5 consumes nested
+delivery.confirmed. Intake may reaffirm its existing staging intent.
+
+Prepared code is not the published web-app version. Update only the
+BridgeEndpoint module in the installed bundle, save, and publish a new version
+of the existing deployment to preserve its endpoint URL. Keep intake/binding
+ON and delivery/migration OFF. Physical queue acknowledgement and process/OS
+recovery remain separate acceptance gates.
