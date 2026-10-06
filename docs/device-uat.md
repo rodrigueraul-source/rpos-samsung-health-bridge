@@ -104,3 +104,13 @@ or claim this batch complete before actual device evidence.
 The published endpoint currently returns `disabled`. Queueing while OFF must
 preserve the export and show a blocked receipt, not Notion success. Do not
 perform a real send until the reviewed backend cutover has been recorded.
+
+**06-Oct10:54 update:** supplied phone screenshots show actual READ/selection
+after Exercise READ consent in the delivery interface:89records,11segments
+in the selected workout, queue empty. Accept new-flow READ in the supplied
+APK context; package/version header is cropped. Do not request another READ
+or export merely to reconfirm installation. Configure and test the bounded
+authenticated **staging-only** pilot described in `intake-pilot.md` after its
+specific ON approval; it permits private receipt/replay verification before
+Notion delivery or scheduler cutover. Ordinary activity reopening alone does
+not prove process/OS restart or real uncertain-response recovery.

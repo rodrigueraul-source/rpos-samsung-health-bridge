@@ -37,10 +37,23 @@ lint-vital PASS, 29 pruebas Android Gradle PASS. APK **R-POS Bridge Envío**
 firmado/verificado, paquete `com.rpos.bridge.delivery`, v0.5.0-delivery.
 Comparte el proveedor Samsung real y conserva la app anterior al instalarse
 por separado. Clave dedicada y respaldo privado retenidos; el certificado
-anterior fue recuperado, pero no su clave privada. No hubo instalación física,
-desinstalación, migración de cola ni activación. Evidencia/hash/certificado y comparación de fuente
-en `android-delivery-build-evidence.md`; CI ca91da4#82/#59 SUCCESS; siguiente gate: una prueba física
-consolidada y configuración privada tras el cutover revisado.
+anterior fue recuperado, pero no su clave privada. Evidencia/hash/certificado
+y comparación de fuente en `android-delivery-build-evidence.md`; CI
+ca91da4#82/#59 SUCCESS. Las capturas06-Oct10:54 muestran consentimiento
+Ejercicio READ y selección real en la interfaz de entrega:89registros y
+11segmentos en el entrenamiento elegido, cola vacía. Lectura aceptada en el
+contexto del APK entregado; encabezado paquete/versión recortado. No repetir
+instalación/READ. Esto no prueba envío,89importaciones ni11sesiones Notion.
+
+Siguiente acción concreta: `intake-pilot.md` y operador independiente
+`BridgePilotOperator.gs.txt`. Preparado/probado e instalado en el editor sin
+ejecutar:3008bytes/SHA256
+`a8bb7cb54b2c8f33ca80a093f356901dd9b298291c355d5992696c52727d91e2`.
+Habilita sólo recepción autenticada en la carpeta privada tras confirmación
+específica; delivery/migration/binding permanecen OFF y scheduler legacy.
+125pruebas Apps Script PASS, incluidas6del operador. Runtime/APK no cambian.
+Faltan configuración HMAC privada, staging/persistencia/replay físicos y
+posterior reconciliación/cutover/entrega/recuperación real. BUILD35% conservado.
 
 ## Evidencia faltante para avanzar operativamente
 

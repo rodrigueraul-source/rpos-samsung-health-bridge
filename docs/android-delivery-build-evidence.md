@@ -71,10 +71,13 @@ root as its parent; no explicit group/domain/anyone permission returned. This
 is metadata evidence, not a complete independent effective-access attestation.
 Writers outside this Apps Script project remain unverified.
 
-The APK is not installed or physically tested. New-package consent/private
-configuration, reviewed backend activation/scheduler cutover, signed delivery,
-Android Keystore/queue restart and actual uncertain-result recovery remain
-open. Accepted v0.4 acquisition checkpoints remain valid and are not repeated.
+Phone screenshots supplied06-Oct10:54 show the delivery interface, Exercise
+READ consent and actual selection from89records with11segments; queue empty.
+Installation/READ accepted in the delivered-APK context. The cropped header
+does not independently identify package/version. Private configuration,
+authenticated staging, reviewed backend activation/scheduler cutover, signed
+Notion delivery, queue restart and uncertain-result recovery remain open.
+Accepted v0.4 acquisition checkpoints remain valid and are not repeated.
 Neither release automatically reads or uploads in the background. BUILD35
 remains the approved Registry baseline; this build does not establish Bridge
 PASS, BR05/BR06 closure or an 80% completion claim.
