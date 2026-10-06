@@ -202,7 +202,7 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
       });
       return prepared;
     },
-    prepare: function(p, stored) {
+    prepare: function(p, stored, reviewedAliases) {
       const record = stored.export.record, aliases = [];
       const props = {'Source': {rich_text: rposBridgeRichText_('samsung_health')},
         'Source Record ID': {rich_text: rposBridgeRichText_(record.uid)},
@@ -217,6 +217,14 @@ function rposBridgeNotionPort_(http, dataSourceId, sha) {
           props.Notes = {rich_text: notes};
         }
       }
+      (reviewedAliases || []).forEach(function(alias) {
+        aliases.push(JSON.parse(JSON.stringify(alias)));
+        const marker = rposBridgeAlias_(alias.source, alias.uid, sha);
+        if (rposBridgePlain_(notes).split(/\r?\n/).indexOf(marker) < 0) {
+          notes = notes.concat(rposBridgeRichText_('\n' + marker + '\n' + JSON.stringify(alias)));
+          props.Notes = {rich_text: notes};
+        }
+      });
       const value = {schema_version: 'rpos.notion.evidence.v2', source: 'samsung_health',
         receipt_id: stored.receipt_id, record_hash: stored.record_hash, record: record, aliases: aliases};
       const code = {language: 'json', rich_text: rposBridgeRichText_(prefix + JSON.stringify(value))};

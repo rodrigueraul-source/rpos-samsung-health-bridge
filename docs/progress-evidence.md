@@ -1,10 +1,37 @@
 # Samsung Health Bridge — avance y evidencia
 
-El Registry conserva BUILD 35% como la línea base vigente. La Master WBS V2.0
-aprobada registra ese porcentaje, pero no define pesos ni una fórmula para
-convertir pruebas en puntos porcentuales. Por tanto, 35% no es una medición
-calculada del trabajo técnico actual. No aumentar el número por documentación,
-por contar casillas de criterios distintos ni por preparar código sin operación.
+La Master WBS V2.0 conserva el 35% como baseline histórico sin una fórmula
+de pesos. Tras la instrucción de Raul del 06-Oct de medir el avance real,
+el checkpoint actual registra **50% por hitos verificados: 3 de 6**.
+Es un conteo explícito de seis hitos de integración, no una estimación del
+esfuerzo consumido o del tiempo restante. No representa Bridge PASS ni 80%.
+La corrección de aliases y documentación no suman otro hito por sí solas.
+
+| Hito de integración | Estado al 06-Oct | Evidencia / condición restante |
+| --- | --- | --- |
+| 1. Build propio reproducible, SDK fijado y APK firmado | Verificado | Build/CI, 29 pruebas Android, firma/paquete verificados |
+| 2. Lectura física propia y contrato de origen | Verificado | UID/tiempos/segmentos reales, READ permitido/denegado/restaurado y relectura |
+| 3. Recepción firmada privada y cola de actividad | Verificado | Primer envío real en Drive privado, hash/UID únicos, reapertura y recheck aceptados |
+| 4. Integración operativa a Notion y continuidad scheduler | Pendiente | Conciliación de métricas/aliases, único writer y entrega/cutover revisados |
+| 5. Recuperación real ante resultado incierto y reinicio de proceso/OS | Pendiente | Recuperación física Android/backend; pruebas sintéticas no cierran el hito |
+| 6. Hardening Samsung y cierre operativo repetible | Pendiente | Otros errores físicos Samsung, validación operacional/release |
+
+Los tres hitos aceptados tienen evidencia técnica/física previa al cambio de
+medición. SA-RPOS-VERTICAL-001 sigue separado; no se cierra por este conteo.
+
+## Corrección de alias histórico revisado · 06-Oct
+
+Si una captura cambia Source a una procedencia screenshot antes de la entrega,
+el archivado automático de la identidad actual pierde la ruta original del
+scheduler. La review v2 admite ahora `aliases` históricos explícitos. Se validan
+vínculo hash/UID/página/última edición, límites, duplicados y ownership remoto;
+se vuelven a comprobar antes de guardar intención/escribir. La entrega conserva
+alias actual e históricos en Notes/v2; el scheduler reutiliza la página y el
+replay no añade escrituras. Los aliases no se infieren del título o la fecha.
+
+La corrección está en el repositorio y bundle generado; **no instalada ni
+desplegada** en Apps Script. El piloto vigente mantiene intake ON y delivery,
+migration y binding OFF, con wrapper legacy. No cambian métricas ni Gym V4.
 
 ## Hitos comprobados al 05-Oct-2026
 

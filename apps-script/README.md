@@ -8,6 +8,15 @@ from a deployed HTTP web app; no deployment version is currently available.
 
 ## What is implemented
 
+The optional ordinary-delivery review v2 `aliases` field preserves explicitly
+reviewed historical identities when the current Source was changed by another
+evidence flow. Each entry is `{source, uid, date}`; at most 20 total aliases,
+including the automatically archived current identity. Duplicate, current or
+canonical identities, malformed provenance and aliases owned by another page
+stop before write intent or PATCH. Ownership is rechecked after preparation.
+Omitted aliases retain the existing review contract. This does not infer history,
+activate delivery, change metrics or replace the owner's installed runtime.
+
 - `BridgeIntake.gs`: bounded, signed Exercise export validation and durable
   staging coordinator, with source/UID identity and a canonical **record** hash.
 - `BridgeEndpoint.gs`: Apps Script `doPost`, Script Lock, Script Properties intent

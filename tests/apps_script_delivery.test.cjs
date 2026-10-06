@@ -290,6 +290,64 @@ test('reviewed existing page delivered/read back; preserves metrics, Notes, alia
   assert.equal(f.state.patches.length, 2);
 });
 
+function screenshotAliasFixture() {
+  const f = fixture();
+  f.state.identity = {source: 'samsung_health_screenshot', uid: EVENT};
+  f.review.expected_source = f.state.identity.source;
+  f.review.aliases = [{source: SCHED, uid: EVENT, date: {start: '2026-01-03'}}];
+  return f;
+}
+
+test('reviewed historical scheduler alias survives screenshot identity, delivery replay and scheduler reuse', () => {
+  const f = screenshotAliasFixture();
+  assert.equal(f.deliver().status, 'confirmed');
+  const ev = clone(f.remote.read(PAGE).evidence);
+  assert.deepEqual(ev.aliases.map(a => a.source), ['samsung_health_screenshot', SCHED]);
+  assert.equal(f.remote.findAlias(SCHED, EVENT)[0], PAGE);
+  assert.equal(f.remote.findAlias('samsung_health_screenshot', EVENT)[0], PAGE);
+  assert.deepEqual(Object.keys(f.state.patches[0].body.properties).sort(), ['Date', 'Notes', 'Source', 'Source Record ID']);
+  assert.equal(f.state.notes[0].annotations.bold, true);
+  assert.equal(fixture(f.state).deliver().status, 'confirmed');
+  let creates = 0;
+  assert.equal(f.scheduler(() => {creates++;}).reused, true);
+  assert.equal(creates, 0);
+  assert.equal(f.state.patches.length, 2);
+});
+
+for (const [name, change] of [
+  ['non-array', r => {r.aliases = null;}],
+  ['duplicate', r => {r.aliases.push(clone(r.aliases[0]));}],
+  ['unknown field', r => {r.aliases[0].extra = true;}],
+  ['empty UID', r => {r.aliases[0].uid = '';}],
+  ['invalid date', r => {r.aliases[0].date = [];}],
+  ['empty date', r => {r.aliases[0].date.start = '';}],
+  ['current identity', r => {r.aliases[0].source = 'samsung_health_screenshot';}],
+  ['canonical identity', r => {r.aliases[0].source = 'samsung_health'; r.aliases[0].uid = 'synthetic-delivery-001';}],
+  ['oversized alias set', r => {r.aliases = Array.from({length: 20}, (_, i) => ({source: SCHED, uid: 'old-' + i, date: {start: '2026-01-03'}}));}]
+]) {
+  test('historical delivery alias refuses ' + name + ' before write intent or remote mutation', () => {
+    const f = screenshotAliasFixture(); change(f.review);
+    assert.equal(f.deliver().status, 'needs_reconciliation');
+    assert.equal(f.state.patches.length, 0);
+    assert.equal(f.state.intents.size, 0);
+  });
+}
+
+for (const phase of ['initial', 'after preparation']) {
+  test('historical alias owned by another page at ' + phase + ' blocks delivery without writes', () => {
+    const f = screenshotAliasFixture();
+    const conflict = () => {f.remote.findAlias = source => source === SCHED ? [DS] : [];};
+    if (phase === 'initial') conflict();
+    else {
+      const prepare = f.remote.prepare;
+      f.remote.prepare = (...args) => {const result = prepare(...args); conflict(); return result;};
+    }
+    assert.equal(f.deliver().status, 'delivery_conflict');
+    assert.equal(f.state.patches.length, 0);
+    assert.equal(f.state.intents.size, 0);
+  });
+}
+
 test('scheduler reuses archived alias after canonical Samsung UID replacement; zero creates', () => {
   const f = fixture(); f.deliver(); let creates = 0;
   const result = f.scheduler(() => {creates++;});

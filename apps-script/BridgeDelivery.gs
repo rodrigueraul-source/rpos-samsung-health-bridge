@@ -23,7 +23,7 @@ function rposBridgeDeliverySave_(deps, id, value) {
       JSON.stringify(rposBridgeCanonical_(value))) rposBridgeFailure_('delivery_conflict');
 }
 
-function rposBridgeReview_(review, stored, page) {
+function rposBridgeReview_(review, stored, page, remote) {
   if (!review || review.schema_version !== 'rpos.bridge.review.v2' ||
       review.source !== 'samsung_health' || review.uid !== stored.export.record.uid ||
       review.record_hash !== stored.record_hash ||
@@ -31,6 +31,29 @@ function rposBridgeReview_(review, stored, page) {
       review.expected_last_edited_time !== page.edited ||
       review.expected_source !== page.source || review.expected_uid !== page.uid ||
       !rposBridgeText_(review.review_basis, 2000)) rposBridgeFailure_('needs_reconciliation');
+  if (review.aliases === undefined) return;
+  const currentAlias = page.uid && (page.source !== 'samsung_health' || page.uid !== stored.export.record.uid);
+  if (!Array.isArray(review.aliases) || review.aliases.length > (currentAlias ? 19 : 20)) {
+    rposBridgeFailure_('needs_reconciliation');
+  }
+  const seen = Object.create(null);
+  review.aliases.forEach(function(alias) {
+    // Only explicit, hash/page/edit-bound reviewed provenance; never infer from titles.
+    if (!alias || Object.keys(alias).sort().join(',') !== 'date,source,uid' ||
+        !rposBridgeText_(alias.source, 256) || !rposBridgeText_(alias.uid, 2000) ||
+        !alias.date || typeof alias.date !== 'object' || Array.isArray(alias.date) ||
+        !rposBridgeText_(alias.date.start, 64) ||
+        Object.keys(alias.date).some(function(k) { return ['start', 'end', 'time_zone'].indexOf(k) < 0; }) ||
+        (alias.date.end != null && !rposBridgeText_(alias.date.end, 64)) ||
+        (alias.date.time_zone != null && !rposBridgeText_(alias.date.time_zone, 128)) ||
+        (alias.source === 'samsung_health' && alias.uid === stored.export.record.uid) ||
+        (alias.source === page.source && alias.uid === page.uid)) rposBridgeFailure_('needs_reconciliation');
+    const key = JSON.stringify([alias.source, alias.uid]);
+    if (seen[key]) rposBridgeFailure_('needs_reconciliation');
+    seen[key] = true;
+    const matches = remote.findUid(alias.source, alias.uid).concat(remote.findAlias(alias.source, alias.uid));
+    if (matches.some(function(id) { return id !== page.id; })) rposBridgeFailure_('delivery_conflict');
+  });
 }
 
 function rposBridgeDeliver_(receiptId, deps) {
@@ -88,11 +111,12 @@ function rposBridgeDeliver_(receiptId, deps) {
     }
     if (page.legacy || page.evidence) rposBridgeFailure_('needs_migration');
     // Require a hash-bound reviewed page even when the UID was set manually but has no evidence.
-    rposBridgeReview_(review, stored, page);
-    const prepared = deps.remote.prepare(page, stored);
+    rposBridgeReview_(review, stored, page, deps.remote);
+    const prepared = deps.remote.prepare(page, stored, review.aliases || []);
     const fresh = deps.remote.read(page.id);
     if (fresh.edited !== page.edited || fresh.source !== page.source || fresh.uid !== page.uid ||
         fresh.evidence || fresh.legacy) rposBridgeFailure_('delivery_conflict');
+    rposBridgeReview_(review, stored, fresh, deps.remote);
     rposBridgeDeliverySave_(deps, receiptId, {receipt_id: receiptId, record_hash: stored.record_hash,
       page_id: page.id, state: 'attempting'});
     deps.remote.write(page.id, prepared);
