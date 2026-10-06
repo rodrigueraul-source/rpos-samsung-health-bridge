@@ -87,3 +87,20 @@ The initial activity-reopen proof does not establish an OS reboot or measured
 process termination. Delivery-worker fault-injection tests use synthetic data;
 authenticated unattended transport and real cross-system timeout/crash tests
 remain open.
+
+## v0.5 separate-package handoff · 06-Oct-2026
+
+The old APK certificate was recovered from the retained v0.4 APK, but its
+private key was not found. Preparing `com.rpos.bridge.delivery` avoids replacing
+or uninstalling that installation. Install the signed **R-POS Bridge Envío**
+APK alongside the old app; preserve the old app and its private queue.
+The new package needs fresh Exercise READ consent and private endpoint/key
+configuration. Existing Samsung Developer Mode need not be toggled again if
+already enabled. Collect one batch covering the new-package READ, durable queue,
+authenticated delivery, activity/process restart and uncertain-result recovery
+against the existing canonical Fitness row. Do not repeat accepted v0.4 gates
+or claim this batch complete before actual device evidence.
+
+The published endpoint currently returns `disabled`. Queueing while OFF must
+preserve the export and show a blocked receipt, not Notion success. Do not
+perform a real send until the reviewed backend cutover has been recorded.

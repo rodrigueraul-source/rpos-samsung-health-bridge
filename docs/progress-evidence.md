@@ -19,14 +19,27 @@ por contar casillas de criterios distintos ni por preparar código sin operació
 El nuevo adaptador REST/CLI y la búsqueda de alias tienen pruebas sintéticas.
 Su preparación no equivale a despliegue o entrega automática.
 
-El 05-Oct-2026 Raul eligió el proyecto Apps Script existente, entregó su enlace
-y confirmó que el TXT del scheduler es el código guardado vigente. La captura
-de implementaciones no muestra versiones activas ni archivadas. El nuevo
-receptor JavaScript autentica y persiste un export con pruebas sintéticas;
-`staged` no confirma entrega en Notion. La captura del 05-Oct a las 22:09 local
-confirma BridgeRuntime.gs instalado y preflight local PASS, con los cuatro
-flags desactivados. No confirma deployment, acceso ni entrega física. El
-diagnóstico de lectura ampliado del 06-Oct todavía requiere instalación/revisión.
+## Checkpoint actual · 06-Oct-2026
+
+La aplicación web versión1 se publicó09:40 con aprobación explícita09:33:
+propietario/acceso sin sesión Google. POST vacío externo devuelve HTTP200,
+JSON receipt.v1/status disabled/retryable false. Los cuatro flags siguen OFF;
+wrapper legacy. Auditoría del propietario09:22 PASS: dos recibos, dos journals
+de migración confirmados y catorce alias. No repetir esos gates aceptados.
+La comparación completa de bytes live, writers externos y cutover siguen
+pendientes; la consulta de metadata de carpeta muestra shared=false/owner-only
+y raíz personal como parent, sin acreditar por sí sola acceso efectivo completo.
+
+La licencia Android SDK fue aprobada09:47. SDK36/build-tools36 y JDK17.0.20
+instalados. SamsungRelease y DeliveryRelease compilados con AGP8.13.2/Kotlin2.3.20,
+lint-vital PASS, 29 pruebas Android Gradle PASS. APK **R-POS Bridge Envío**
+firmado/verificado, paquete `com.rpos.bridge.delivery`, v0.5.0-delivery.
+Comparte el proveedor Samsung real y conserva la app anterior al instalarse
+por separado. Clave dedicada y respaldo privado retenidos; el certificado
+anterior fue recuperado, pero no su clave privada. No hubo instalación física,
+desinstalación, migración de cola ni activación. Evidencia/hash/certificado
+en `android-delivery-build-evidence.md`; siguiente gate: una prueba física
+consolidada y configuración privada tras el cutover revisado.
 
 ## Evidencia faltante para avanzar operativamente
 
@@ -45,8 +58,8 @@ diagnóstico de lectura ampliado del 06-Oct todavía requiere instalación/revis
 2. Runtime elegido: Apps Script. Receptor, coordinador de entrega JavaScript
    y wrapper de alias preparados en `apps-script/`; no ejecutan el CLI Python.
    Android v0.5 ya prepara cola privada/firma/envío en primer plano: 24 nuevas
-   pruebas JVM locales + 67 JS + 46 Python/validadores PASS. Faltan firmado/build
-   Samsung, vínculo/migración revisados en vivo y despliegue/UAT real.
+   pruebas JVM locales + 67 JS + 46 Python/validadores PASS. Build/firma Samsung y publicación ya comprobados. Faltan
+   cutover/binding revisados y UAT de entrega/recuperación real.
 3. Configurar autenticación, almacenamiento privado y acceso del endpoint en
    el entorno al revisar el despliegue concreto. Reutilizar la conexión Notion
    aprobada; nunca enviar tokens por chat. El SDK no vuelve a pedirse.

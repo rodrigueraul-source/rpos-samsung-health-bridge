@@ -8,7 +8,10 @@ data/private/
 .env.*
 *.keystore
 *.jks
+*.p12
+*.pfx
 .gradle/
+.kotlin/
 **/build/
 local.properties
 app/libs/*.aar

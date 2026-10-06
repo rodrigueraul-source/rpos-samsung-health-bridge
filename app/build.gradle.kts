@@ -28,7 +28,18 @@ android {
         create("samsung") {
             dimension = "healthSource"
         }
+        // Coexists with older installs when their private signing key is unavailable.
+        create("delivery") {
+            dimension = "healthSource"
+            applicationIdSuffix = ".delivery"
+            versionNameSuffix = "-delivery"
+            resValue("string", "app_name", "R-POS Bridge Envío")
+        }
     }
+
+    // Both real flavors use the same read-only Samsung provider.
+    sourceSets.getByName("delivery").java.srcDir("src/samsung/java")
+    defaultConfig.resValue("string", "app_name", "R-POS Samsung Health Bridge")
 
     buildTypes {
         release {
@@ -56,5 +67,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("com.google.code.gson:gson:2.13.2")
     "samsungImplementation"(files("libs/samsung-health-data-api-1.1.0.aar"))
+    "deliveryImplementation"(files("libs/samsung-health-data-api-1.1.0.aar"))
     testImplementation("junit:junit:4.13.2")
 }

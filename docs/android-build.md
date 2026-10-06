@@ -7,7 +7,8 @@ Recover the missing Android acquisition layer without replacing the existing Pyt
 ## Flavors
 
 - `mockDebug`: compiles without Samsung proprietary binaries and is used by CI to prove the Android project structure.
-- `samsungDebug`: real acquisition flavor. Requires the official Samsung Health Data SDK AAR in `app/libs/`.
+- `samsungDebug` / `samsungRelease`: original real acquisition package `com.rpos.bridge`. Requires the official Samsung Health Data SDK AAR in `app/libs/` and the original private certificate for an in-place update.
+- `deliveryRelease`: real Samsung acquisition plus the same delivery implementation, package `com.rpos.bridge.delivery`, label **R-POS Bridge Envío**. Shares the Samsung provider/AAR; it coexists with the original app when its private signing key is unavailable. It has independent consent, Android Keystore, queue and configuration. It does not import or remove the original app data.
 
 ## SDK pin and Samsung build
 
@@ -25,8 +26,14 @@ already supplied instead of accepting that response.
 For a local build, extract that AAR to `app/libs/` and run:
 
 ```sh
-gradle :app:assembleSamsungDebug :app:testSamsungDebugUnitTest
+gradle :app:assembleSamsungRelease :app:assembleDeliveryRelease :app:testDeliveryReleaseUnitTest
 ```
+
+Release outputs are unsigned by Gradle. Align and sign the delivery APK with the
+dedicated retained private key using Android build-tools; verify the resulting
+certificate and application ID before installation. Keep signing material and
+its recovery password outside Git, APKs, logs and chat. An APK includes only the
+public certificate, which cannot recover its lost private key.
 
 ## Current minimal read contract
 

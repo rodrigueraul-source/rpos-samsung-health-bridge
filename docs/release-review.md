@@ -53,22 +53,29 @@ physical transport/recovery and writers outside this project unverified.
 Exact-wrapper detection recognizes only the reviewed legacy and Bridge
 wrappers; other formatting or bodies require source review, never execution.
 
-## Actual release dependencies
+## Actual release dependencies — current 06-Oct checkpoint
 
-1. Inspect the existing web-app deployment and its Execute as / Who has access
-   configuration. The current cloud browser redirects to public documentation
-   and Google sign-in returns 502; this is not proof about the owner's editor.
-2. Run the read-only audit in the existing project; inspect and reconcile any
-   missing or uncertain journal against retained evidence before cutover.
-3. Recover compatible app signing material privately. Do not uninstall the
-   existing app, discard its private queue or substitute a new key implicitly.
-4. Accept Android SDK terms only with the owner's explicit agreement, and
-   resolve the local Android build dependencies if a fresh Samsung build is
-   needed. A mock/host test does not prove a Samsung APK build or signature.
-5. Perform the reviewed maintenance cutover/deployment. Public endpoint access
-   is a concrete permission decision; payload HMAC does not bypass that review.
-6. Install a compatible Samsung APK and run authenticated selected-record
-   delivery, persistent queue/restart and actual uncertain-write recovery.
+1. **Publication/access complete:** version1 published09:40 under owner approval
+   09:33, owner execution/anonymous access. External empty POST HTTP200 JSON
+   disabled PASS. Earlier sign-in502 is resolved. All activation flags OFF.
+2. **Read-only audit accepted:** owner09:22 live_reads_pass_activation_not_approved;
+   two receipts/two confirmed migration journals/fourteen aliases; legacy wrapper.
+   Full live source-byte comparison and writers outside this project remain open.
+3. **Signing alternative prepared:** old v0.4 certificate identified but its
+   private key unavailable. The dedicated signed delivery package coexists with
+   the old app, whose data/queue are preserved. New signing recovery retained
+   privately; no implicit substitute certificate for the old application ID.
+4. **SDK/build complete:** license approved09:47 and installed SDK36/build-tools36;
+   matching JDK17.0.20. Both Samsung/delivery release builds and release lint-vital
+   PASS; 29 actual Android Gradle unit cases PASS. Signed artifact verification
+   and certificate/package/Samsung provider/16 KiB alignment PASS. Details in
+   `android-delivery-build-evidence.md`. Device operation remains unproven.
+5. **Cutover open:** review live bytes, scheduler binding, effective receipt
+   access and single writer before changing flags/wrapper. Six existing owner
+   time triggers observed; no new trigger added.
+6. **Physical handoff open:** install the new separate Samsung package; grant
+   its own Exercise READ consent, configure auth privately, and prove queue,
+   authenticated delivery, restart and actual uncertain-write recovery.
 
 BR05/BR06 cannot close from documentation or synthetic tests. BR07's remaining
 physical Samsung error cases also remain open. Accepted acquisition, two real
@@ -85,4 +92,5 @@ That run uses the existing Gradle 8.13 Kotlin 2.0.21 compiler, JDK 17, JUnit
 does not compile AndroidBridgeRuntime/MainActivity or the Samsung provider,
 use Android Keystore, build/sign an APK, or establish physical recovery.
 The Android project uses Kotlin 2.3.20; final-head CI independently checks its
-mock build and tests. Samsung build/signing remains a separate dependency.
+mock build and tests. The fresh real Samsung/delivery build and signing now pass independently;
+physical delivery/recovery still remain separate gates.

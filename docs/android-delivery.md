@@ -30,8 +30,11 @@ No installed phone update or actual network/outage recovery is claimed here.
 Endpoint changes after any send attempt are blocked: transferring a pending
 UID to another backend could bypass its original durable intent. Key rotation
 for the same approved endpoint is possible privately after operator review.
-The editor project URL is NOT the deployed endpoint. The deployment is still
-pending; do not invent a URL/version or repeat earlier SDK/phone evidence.
+The editor project URL is NOT the deployed endpoint. Version 1 was published on 06-Oct-2026 under explicit owner approval; the
+Implementation Log retains the exact /exec URL. An external empty POST returned
+HTTP 200 with the receipt schema and `disabled`. All four activation flags
+remain OFF and the scheduler wrapper remains legacy. This closes publication
+and anonymous access only; it does not prove signed delivery or Notion writes.
 
 ## Persistence and receipt semantics
 
@@ -107,3 +110,18 @@ Official references:
 - https://developer.android.com/reference/android/util/AtomicFile
 - https://developer.android.com/reference/android/content/Context#getNoBackupFilesDir()
 - https://developers.google.com/apps-script/guides/content
+
+## Separate installation when the old private certificate is unavailable
+
+The `deliveryRelease` flavor uses `com.rpos.bridge.delivery` and label
+**R-POS Bridge Envío**. It retains the same Samsung READ-only provider, SDK 1.1.0
+and private delivery runtime. A dedicated retained signing key signs this
+package. The previous `com.rpos.bridge` app remains installed with its data;
+no uninstall, data clearing, receipt extraction or queue migration is performed.
+The new app starts with its own empty queue and requests its own Exercise READ
+consent. Accepted v0.4 acquisition evidence remains accepted, but the new package
+requires one physical read/configuration/delivery and recovery UAT.
+
+Use only the new app for the reviewed delivery test. Keep the old app as a
+fallback, without separately submitting the same record during that test.
+Neither app acquires or sends automatically in the background.
