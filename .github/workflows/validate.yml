@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: "24"
       - run: node --test tests/apps_script_*.test.cjs
+      - run: node scripts/build_apps_script_bundle.cjs --check
 
   python-contract:
     runs-on: ubuntu-latest
