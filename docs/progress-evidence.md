@@ -23,7 +23,10 @@ El 05-Oct-2026 Raul eligió el proyecto Apps Script existente, entregó su enlac
 y confirmó que el TXT del scheduler es el código guardado vigente. La captura
 de implementaciones no muestra versiones activas ni archivadas. El nuevo
 receptor JavaScript autentica y persiste un export con pruebas sintéticas;
-`staged` no confirma entrega en Notion. No está instalado ni desplegado.
+`staged` no confirma entrega en Notion. La captura del 05-Oct a las 22:09 local
+confirma BridgeRuntime.gs instalado y preflight local PASS, con los cuatro
+flags desactivados. No confirma deployment, acceso ni entrega física. El
+diagnóstico de lectura ampliado del 06-Oct todavía requiere instalación/revisión.
 
 ## Evidencia faltante para avanzar operativamente
 

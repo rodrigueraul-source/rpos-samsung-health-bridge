@@ -16,7 +16,7 @@ if (new Set(declarations).size !== declarations.length) throw new Error('Duplica
 // Loading must not execute any Apps Script service, network or data mutation.
 const context = vm.createContext({});
 vm.runInContext(text, context, {timeout: 1000});
-for (const name of ['rposBridgePreflight', 'rposBridgeCreateGymCapture_', 'doPost']) {
+for (const name of ['rposBridgePreflight', 'rposBridgeReadinessAudit', 'rposBridgeCreateGymCapture_', 'doPost']) {
   if (typeof context[name] !== 'function') throw new Error('Missing runtime entry');
 }
 if (process.argv.includes('--check')) {

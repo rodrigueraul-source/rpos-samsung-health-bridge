@@ -38,6 +38,12 @@ access, execution success or the absence of other project defects.
 Build/check the bundle with `node scripts/build_apps_script_bundle.cjs` and
 `node scripts/build_apps_script_bundle.cjs --check`. CI checks reproducibility.
 
+06-Oct operational review: the bundle also contains `rposBridgeReadinessAudit`.
+After the local preflight, this one redacted read-only operator checks up to four
+existing receipts, durable journals, exact aliases and fresh Notion evidence.
+It blocks HTTP writes and never activates/migrates/repairs anything. See
+`docs/release-review.md` for bounds, statuses and remaining live dependencies.
+
 Do not change flags simply to obtain a passing diagnostic. An enabled or
 malformed flag is a review result and must be reconciled before continuing.
 
