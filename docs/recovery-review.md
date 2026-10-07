@@ -13,7 +13,36 @@ replace `doPost` or require another deployment version. A private handoff adds
 one zero-argument `rposBridgeReviewRecovery` wrapper with the approved existing
 /exec URL. No signing key or receipt ID is hardcoded in the source/handoff.
 
-## One owner block
+## Repair when the saved runtime lacks only UUID and SHA helpers
+
+Revision 2 can identify `runtime_incomplete` with `source_check.status: matched`,
+`runtime_present.uuid: false` and `runtime_present.sha256: false`, while every
+other listed function is present. This establishes missing helpers in the saved
+project, not a source mismatch or the exact state of the deployed version.
+
+For that specific result, use `apps-script/BridgeRuntimeHelpers.gs.txt`. Its two
+function bodies are identical to the shipped `BridgeDelivery.gs` definitions.
+It has no entry point or top-level service calls and is deliberately excluded
+from the generated bundle. No other runtime functions, properties or data are
+changed by adding it. Do not install it when either helper already exists;
+remove the repair file before reinstalling the full bundle, which has both.
+
+Complete one owner block in the existing project:
+
+1. Add a Script file named **BridgeRuntimeHelpers**, paste that file's complete
+   content and save. Keep the existing runtime and revision-2 review file.
+2. **Deploy → Manage deployments → existing active deployment → Edit → New
+   version → Deploy**, retaining its URL, execution identity and access settings.
+   Saving alone does not update the versioned /exec endpoint.
+3. Execute the existing **rposBridgeReviewRecovery** once and send its JSON log.
+   All eight runtime booleans should be true; compare the separate local and
+   deployed results. Both confirmations are still server-only evidence.
+
+The existing Android v0.6/checkpoint stay in use. Phone restart/recheck is the
+next step after server results permit it, not before this repair is checked.
+Keep continuous delivery/migration OFF and intake/reviewed binding ON.
+
+## Diagnostic-only owner block
 
 1. In the existing Apps Script project, replace the existing review Script file
    with the full prepared handoff and save. The owner's file may be named

@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const crypto = require('node:crypto');
 const source = fs.readFileSync(__dirname + '/../apps-script/BridgeRecoveryReview.gs.txt', 'utf8');
 const runtime = fs.readFileSync(__dirname + '/../apps-script/BridgeRuntime.gs.txt', 'utf8');
+const repair = fs.readFileSync(__dirname + '/../apps-script/BridgeRuntimeHelpers.gs.txt', 'utf8');
 const ENDPOINT = 'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec';
 const CONTENT = 'https://script.googleusercontent.com/macros/echo?user_content_key=synthetic';
 const ID = '1'.repeat(64), HASH = '2'.repeat(64), KEY = 'b'.repeat(64);
@@ -136,6 +137,35 @@ test('missing UUID helper is not reported as a mismatched source', () => {
   assert.equal(r.configuration.source_matches_scheduler, true); assert.equal(r.source_check.status, 'matched');
   assert.equal(r.source_check.runtime_uuid_status, 'missing'); assert.equal(r.status, 'runtime_incomplete');
   assert.equal(r.runtime_present.uuid, false); assert.equal(f.calls.length, 0);
+});
+test('two-helper repair restores the observed incomplete bundle without changing its other functions', () => {
+  const intact = vm.createContext({}); vm.runInContext(runtime, intact);
+  const functions = ['rposBridgeSha_', 'rposBridgeUuid_'];
+  let broken = runtime;
+  for (const name of functions) broken = broken.replace(String(intact[name]), '');
+  const f = fixture(); delete f.values['RPOS_BRIDGE_DELIVERY_' + ID];
+  const context = vm.createContext({RPOS: {fitnessDataSourceId: DS},
+    PropertiesService: f.context.PropertiesService,
+    Utilities: {DigestAlgorithm: {SHA_256: 'sha256'}, Charset: {UTF_8: 'utf8'},
+      computeDigest: (algorithm, text, charset) => [...crypto.createHash(algorithm).update(text, charset).digest()]
+        .map(byte => byte > 127 ? byte - 256 : byte)}});
+  vm.runInContext(broken, context); vm.runInContext(source, context);
+  const failed = context.rposBridgeRecoveryReviewRuntime_(ENDPOINT);
+  assert.equal(failed.status, 'runtime_incomplete'); assert.equal(failed.configuration.source_matches_scheduler, true);
+  assert.equal(failed.runtime_present.uuid, false); assert.equal(failed.runtime_present.sha256, false);
+  const prior = {};
+  for (const [name, value] of Object.entries(context)) if (typeof value === 'function') prior[name] = value;
+  vm.runInContext(repair, context);
+  for (const [name, value] of Object.entries(prior)) assert.equal(context[name], value);
+  for (const name of functions) assert.equal(String(context[name]), String(intact[name]));
+  const restored = context.rposBridgeRecoveryReviewRuntime_(ENDPOINT);
+  assert.equal(restored.status, 'one_confirmed_receipt_required');
+  assert.equal(restored.source_check.runtime_uuid_status, 'ok');
+  assert.equal(Object.values(restored.runtime_present).every(Boolean), true);
+  assert.equal(restored.script_properties_unchanged, true);
+  // Known SHA-256 vector also exercises Apps Script's signed digest bytes.
+  assert.equal(context.rposBridgeSha_('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  assert.equal(f.calls.length, 0); assert.equal(f.state.writes, 0);
 });
 test('throwing or incompatible UUID helpers are distinguished without exposing exceptions', () => {
   for (const helper of [() => {throw Error('private-error-canary');}, () => 'private-uid-canary']) {
