@@ -15,8 +15,10 @@ one zero-argument `rposBridgeReviewRecovery` wrapper with the approved existing
 
 ## One owner block
 
-1. In the existing Apps Script project, add one Script file named
-   `BridgeRecoveryReview`; paste the full prepared handoff and save.
+1. In the existing Apps Script project, replace the existing review Script file
+   with the full prepared handoff and save. The owner's file may be named
+   `BridgeReviewRecovery`; that name is valid. Add `BridgeRecoveryReview` only if
+   no review file exists; do not create a second copy or rename an existing file.
 2. Select **rposBridgeReviewRecovery** and execute it once. Send the execution
    log JSON. It reports no secrets or health measurements.
 3. Keep the existing app, checkpoint, configuration, deployment URL and flags.
@@ -32,6 +34,8 @@ Do not manually execute `doPost` or the intake activation operator.
 - URL has the existing HTTPS Apps Script /exec shape before credentials are read.
 - Intake/binding are exactly ON, delivery/migration exactly OFF; credentials are
   present/formatted and the configured Fitness source matches the scheduler.
+  Revision 2 compares IDs independently of the runtime helper, then checks the
+  required runtime functions and helper separately, without network or mutations.
 - At most 100 delivery journals are inspected; exactly one confirmed, internally
   consistent receipt must exist. Missing/ambiguous/malformed selection stops.
 - The same read-only acknowledgement core reads its unique Drive receipt,
@@ -48,6 +52,18 @@ Do not manually execute `doPost` or the intake activation operator.
   stops before the deployed query; any later change invalidates the overall review.
 
 ## Reading the result
+
+Revision 1 collapsed missing/throwing UUID helpers and different sources into
+`source_matches_scheduler: false`. That flag alone cannot establish a live
+configuration mismatch. Revision 2 adds only safe booleans and reason codes:
+
+- `source_check.status: matched` accepts equal valid compact/hyphenated IDs,
+  ignoring case. A `runtime_incomplete` result identifies missing functions;
+  `runtime_uuid_requires_review` identifies an error/incompatible UUID helper.
+- `configured_source_invalid`, `scheduler_source_missing`,
+  `scheduler_source_invalid` or `source_mismatch` identify the configuration
+  reason. Values and exception messages are never printed. Do not change
+  properties or reinstall the runtime from the old false flag alone.
 
 `server_reads_confirmed_android_recovery_not_checked` means both server paths
 reported confirmation with unchanged properties. It is not a phone, OS/process,

@@ -4,8 +4,9 @@
  */
 function rposBridgeRecoveryReviewRuntime_(endpoint) {
   const report = {schema_version: 'rpos.bridge.recovery.review.v1',
+    review_revision: 2,
     scope: 'server_receipt_read_only_not_android_recovery', status: 'review_incomplete',
-    configuration: {}, flags: {}, selection: {}, local: null, deployed: null,
+    configuration: {}, source_check: {}, runtime_present: {}, flags: {}, selection: {}, local: null, deployed: null,
     local_notion_http: [], last_stage: 'endpoint_validation', script_properties_unchanged: false};
   let props, before;
   const began = Date.now();
@@ -14,6 +15,12 @@ function rposBridgeRecoveryReviewRuntime_(endpoint) {
     return JSON.stringify(Object.keys(values).sort().map(function(k) { return [k, values[k]]; }));
   }
   function elapsed(start) { return Math.max(0, Date.now() - start); }
+  function sourceUuid(value) {
+    if (typeof value !== 'string' ||
+        !/^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$/i.test(value)) return null;
+    const s = value.replace(/-/g, '').toLowerCase();
+    return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);
+  }
   function safeStatus(value) {
     const allowed = ['confirmed', 'busy', 'storage_unresolved', 'delivery_conflict',
       'needs_migration', 'unresolved', 'not_configured', 'delivery_error', 'disabled',
@@ -70,10 +77,38 @@ function rposBridgeRecoveryReviewRuntime_(endpoint) {
     report.configuration = {hmac_format_valid: typeof key === 'string' && /^[a-f0-9]{64}$/.test(key),
       notion_token_present: typeof token === 'string' && !!token.trim() && !/[\r\n]/.test(token),
       receipt_folder_present: typeof folder === 'string' && !!folder.trim(), source_matches_scheduler: false};
-    try { report.configuration.source_matches_scheduler = typeof RPOS !== 'undefined' && !!RPOS &&
-      rposBridgeUuid_(source) === rposBridgeUuid_(RPOS.fitnessDataSourceId); } catch (ignore) {}
+    let schedulerSource;
+    try { schedulerSource = typeof RPOS !== 'undefined' && RPOS ? RPOS.fitnessDataSourceId : undefined; }
+    catch (ignore) {}
+    const configuredUuid = sourceUuid(source), schedulerUuid = sourceUuid(schedulerSource);
+    report.configuration.source_matches_scheduler = configuredUuid !== null && schedulerUuid !== null &&
+      configuredUuid === schedulerUuid;
+    // Missing/throwing runtime helpers must not masquerade as different source IDs.
+    report.source_check = {configured_source_valid: configuredUuid !== null,
+      scheduler_source_present: typeof schedulerSource === 'string' && schedulerSource.length > 0,
+      scheduler_source_valid: schedulerUuid !== null,
+      status: configuredUuid === null ? 'configured_source_invalid' :
+        schedulerSource === undefined ? 'scheduler_source_missing' : schedulerUuid === null ? 'scheduler_source_invalid' :
+          configuredUuid !== schedulerUuid ? 'source_mismatch' : 'matched',
+      runtime_uuid_status: 'not_checked'};
+    report.runtime_present = {uuid: typeof rposBridgeUuid_ === 'function',
+      sha256: typeof rposBridgeSha_ === 'function', hex: typeof rposBridgeHex_ === 'function',
+      canonical: typeof rposBridgeCanonical_ === 'function', failure: typeof rposBridgeFailure_ === 'function',
+      drive_store: typeof rposBridgeDriveStore_ === 'function', notion: typeof rposBridgeNotionPort_ === 'function',
+      acknowledgement: typeof rposBridgeAcknowledgement_ === 'function'};
     if (!Object.keys(report.configuration).every(function(k) { return report.configuration[k]; })) {
       report.status = 'configuration_requires_review'; return report;
+    }
+    if (!Object.keys(report.runtime_present).every(function(k) { return report.runtime_present[k]; })) {
+      report.source_check.runtime_uuid_status = report.runtime_present.uuid ? 'not_checked' : 'missing';
+      report.status = 'runtime_incomplete'; return report;
+    }
+    try {
+      report.source_check.runtime_uuid_status = rposBridgeUuid_(source) === configuredUuid &&
+        rposBridgeUuid_(schedulerSource) === schedulerUuid ? 'ok' : 'incompatible';
+    } catch (ignore) { report.source_check.runtime_uuid_status = 'error'; }
+    if (report.source_check.runtime_uuid_status !== 'ok') {
+      report.status = 'runtime_uuid_requires_review'; return report;
     }
     report.last_stage = 'journal_selection';
     const prefix = 'RPOS_BRIDGE_DELIVERY_';
@@ -95,7 +130,7 @@ function rposBridgeRecoveryReviewRuntime_(endpoint) {
     }
     report.selection.confirmed_journal_count = confirmed.length;
     if (confirmed.length !== 1) { report.status = 'one_confirmed_receipt_required'; return report; }
-    const receipt = confirmed[0], sourceId = rposBridgeUuid_(source);
+    const receipt = confirmed[0], sourceId = configuredUuid;
     report.last_stage = 'drive_open';
     const store = rposBridgeDriveStore_(folder, props);
     report.last_stage = 'local_acknowledgement';

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const crypto = require('node:crypto');
 const source = fs.readFileSync(__dirname + '/../apps-script/BridgeRecoveryReview.gs.txt', 'utf8');
+const runtime = fs.readFileSync(__dirname + '/../apps-script/BridgeRuntime.gs.txt', 'utf8');
 const ENDPOINT = 'https://script.google.com/macros/s/SYNTHETIC_DEPLOYMENT/exec';
 const CONTENT = 'https://script.googleusercontent.com/macros/echo?user_content_key=synthetic';
 const ID = '1'.repeat(64), HASH = '2'.repeat(64), KEY = 'b'.repeat(64);
@@ -33,7 +34,7 @@ function fixture() {
     LockService: {getScriptLock: () => ({tryLock: () => true, releaseLock: () => {}})},
     Utilities: {Charset: {UTF_8: 'utf8'}, newBlob: text => ({getBytes: () => Buffer.from(text, 'utf8')}),
       computeHmacSha256Signature: (text, key) => [...crypto.createHmac('sha256', key).update(text).digest()]},
-    rposBridgeUuid_: v => {if (typeof v !== 'string') fail('invalid_request'); return v;},
+    rposBridgeCanonical_: v => v,
     rposBridgeSha_: text => crypto.createHash('sha256').update(text).digest('hex'),
     rposBridgeHex_: bytes => Buffer.from(bytes).toString('hex'), rposBridgeFailure_: fail,
     rposBridgeDriveStore_: () => ({find: () => [], getIntent: () => null,
@@ -62,18 +63,21 @@ function fixture() {
       return response(state.remoteCode, state.raw ?? remoteBody, {'Content-Type': state.remoteType});
     }}
   });
+  // Use the shipped UUID helper, rather than the former return-input mock.
+  const helper = vm.createContext({}); vm.runInContext(runtime, helper);
+  context.rposBridgeUuid_ = helper.rposBridgeUuid_;
   vm.runInContext(source, context);
   function run(endpoint = ENDPOINT) {
     const result = JSON.parse(JSON.stringify(context.rposBridgeRecoveryReviewRuntime_(endpoint)));
     assert.equal(state.writes, 0);
     const raw = JSON.stringify(result);
     for (const secret of [ID, HASH, KEY, 'private-token-canary', 'private-folder-canary',
-      'private-uid-canary', 'private-response-canary', 'private-error-canary', ENDPOINT, CONTENT]) {
+      'private-uid-canary', 'private-response-canary', 'private-error-canary', DS, ENDPOINT, CONTENT]) {
       assert.equal(raw.includes(secret), false, 'review leaked private value');
     }
     return result;
   }
-  return {run, state, values, calls, remoteBody};
+  return {run, state, values, calls, remoteBody, context};
 }
 test('review source loads without service calls or automatic execution', () => {
   vm.runInContext(source, vm.createContext({}));
@@ -107,6 +111,63 @@ test('unexpected flags and malformed credential configuration stop before networ
     ['BRIDGE_RECEIPT_FOLDER_ID', ''], ['BRIDGE_FITNESS_DATA_SOURCE_ID', 'another']]) {
     const f = fixture(); f.values[key] = value; assert.equal(f.run().status, 'configuration_requires_review'); assert.equal(f.calls.length, 0);
   }
+});
+test('source normalization uses actual runtime across separate files and lexical scheduler configuration', () => {
+  const id = 'ABCDEFAB-1234-4567-89AB-ABCDEFABCDEF';
+  for (const [configured, scheduled] of [[id, id.toLowerCase().replaceAll('-', '')],
+    [id.replaceAll('-', ''), id.toLowerCase()]]) {
+    const f = fixture();
+    f.values.BRIDGE_FITNESS_DATA_SOURCE_ID = configured;
+    delete f.values['RPOS_BRIDGE_DELIVERY_' + ID];
+    const context = vm.createContext({PropertiesService: f.context.PropertiesService});
+    vm.runInContext('const RPOS = {fitnessDataSourceId: ' + JSON.stringify(scheduled) + '};', context);
+    vm.runInContext(runtime, context); vm.runInContext(source, context);
+    const r = context.rposBridgeRecoveryReviewRuntime_(ENDPOINT);
+    assert.equal(r.review_revision, 2); assert.equal(r.configuration.source_matches_scheduler, true);
+    assert.equal(r.source_check.status, 'matched'); assert.equal(r.source_check.runtime_uuid_status, 'ok');
+    assert.equal(r.status, 'one_confirmed_receipt_required'); assert.equal(r.script_properties_unchanged, true);
+    assert.equal(f.calls.length, 0); assert.equal(f.state.writes, 0);
+    assert.equal(JSON.stringify(r).toLowerCase().includes('abcdefab'), false);
+  }
+});
+test('missing UUID helper is not reported as a mismatched source', () => {
+  const f = fixture(); delete f.context.rposBridgeUuid_;
+  const r = f.run();
+  assert.equal(r.configuration.source_matches_scheduler, true); assert.equal(r.source_check.status, 'matched');
+  assert.equal(r.source_check.runtime_uuid_status, 'missing'); assert.equal(r.status, 'runtime_incomplete');
+  assert.equal(r.runtime_present.uuid, false); assert.equal(f.calls.length, 0);
+});
+test('throwing or incompatible UUID helpers are distinguished without exposing exceptions', () => {
+  for (const helper of [() => {throw Error('private-error-canary');}, () => 'private-uid-canary']) {
+    const f = fixture(); f.context.rposBridgeUuid_ = helper; const r = f.run();
+    assert.equal(r.configuration.source_matches_scheduler, true); assert.equal(r.status, 'runtime_uuid_requires_review');
+    assert.ok(['error', 'incompatible'].includes(r.source_check.runtime_uuid_status)); assert.equal(f.calls.length, 0);
+  }
+});
+test('missing acknowledgement core stops before Drive and network', () => {
+  const f = fixture(); delete f.context.rposBridgeAcknowledgement_; const r = f.run();
+  assert.equal(r.configuration.source_matches_scheduler, true); assert.equal(r.status, 'runtime_incomplete');
+  assert.equal(r.runtime_present.acknowledgement, false); assert.equal(f.calls.length, 0);
+});
+test('genuinely different valid sources are distinguished from helper failures', () => {
+  const f = fixture(); f.values.BRIDGE_FITNESS_DATA_SOURCE_ID = '00000000-0000-4000-8000-000000000003';
+  const r = f.run(); assert.equal(r.source_check.status, 'source_mismatch');
+  assert.equal(r.configuration.source_matches_scheduler, false); assert.equal(r.status, 'configuration_requires_review');
+  assert.equal(r.source_check.runtime_uuid_status, 'not_checked'); assert.equal(f.calls.length, 0);
+});
+test('absent scheduler configuration has its own safe reason', () => {
+  const f = fixture(); delete f.context.RPOS; const r = f.run();
+  assert.equal(r.source_check.status, 'scheduler_source_missing'); assert.equal(r.runtime_present.uuid, true);
+  assert.equal(r.status, 'configuration_requires_review'); assert.equal(f.calls.length, 0);
+});
+test('malformed source identifiers stop without accepting or revealing supplied values', () => {
+  for (const value of ['private-uid-canary', ' ' + DS, null, 123]) {
+    const f = fixture(); f.values.BRIDGE_FITNESS_DATA_SOURCE_ID = value;
+    const r = f.run(); assert.equal(r.source_check.status, 'configured_source_invalid');
+    assert.equal(r.status, 'configuration_requires_review'); assert.equal(f.calls.length, 0);
+  }
+  const f = fixture(); f.context.RPOS.fitnessDataSourceId = 'private-uid-canary';
+  const r = f.run(); assert.equal(r.source_check.status, 'scheduler_source_invalid'); assert.equal(f.calls.length, 0);
 });
 test('missing, ambiguous, malformed and excessive journals never select a different receipt', () => {
   const f = fixture(); delete f.values['RPOS_BRIDGE_DELIVERY_' + ID];
