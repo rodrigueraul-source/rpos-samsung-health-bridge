@@ -1,0 +1,187 @@
+/* Explicit one-receipt read-only review, separate from the deployed runtime.
+ * No health/credential/identity output; no property, Drive or Notion writes.
+ * The private owner wrapper supplies the EXISTING /exec URL, not a new one.
+ */
+function rposBridgeRecoveryReviewRuntime_(endpoint) {
+  const report = {schema_version: 'rpos.bridge.recovery.review.v1',
+    scope: 'server_receipt_read_only_not_android_recovery', status: 'review_incomplete',
+    configuration: {}, flags: {}, selection: {}, local: null, deployed: null,
+    local_notion_http: [], last_stage: 'endpoint_validation', script_properties_unchanged: false};
+  let props, before;
+  const began = Date.now();
+  function snapshot() {
+    const values = props.getProperties();
+    return JSON.stringify(Object.keys(values).sort().map(function(k) { return [k, values[k]]; }));
+  }
+  function elapsed(start) { return Math.max(0, Date.now() - start); }
+  function safeStatus(value) {
+    const allowed = ['confirmed', 'busy', 'storage_unresolved', 'delivery_conflict',
+      'needs_migration', 'unresolved', 'not_configured', 'delivery_error', 'disabled',
+      'invalid_request', 'unauthorized'];
+    return allowed.indexOf(value) >= 0 ? value : 'invalid_response';
+  }
+  function checkResponse(raw, schema, id, hash) {
+    if (Utilities.newBlob(raw).getBytes().length > 4096) return {status: 'invalid_response'};
+    let body;
+    try { body = JSON.parse(raw); } catch (ignore) { return {status: 'invalid_response'}; }
+    if (!body || Array.isArray(body) || typeof body !== 'object') return {status: 'invalid_response'};
+    if (schema === 'rpos.exercise.acknowledgement.receipt.v1' &&
+        body.schema_version === 'rpos.exercise.intake.receipt.v1' &&
+        body.status === 'invalid_request' && body.notion_confirmed === false) {
+      return {status: 'backend_update_required'};
+    }
+    const status = safeStatus(body.status);
+    if (body.schema_version !== schema || status === 'invalid_response' ||
+        typeof body.notion_confirmed !== 'boolean' ||
+        body.notion_confirmed !== (status === 'confirmed')) return {status: 'invalid_response'};
+    if (schema === 'rpos.exercise.acknowledgement.receipt.v1') {
+      const nullIds = body.receipt_id === null && body.record_hash === null;
+      const matching = body.receipt_id === id && body.record_hash === hash;
+      if ((!nullIds && !matching) || (status === 'confirmed' && !matching)) {
+        return {status: 'receipt_conflict'};
+      }
+      return {status: status, notion_confirmed: body.notion_confirmed,
+        authenticated_identity_matches: matching};
+    }
+    return {status: status, notion_confirmed: body.notion_confirmed};
+  }
+  try {
+    // Validate the URL before reading credentials or making any network call.
+    if (typeof endpoint !== 'string' ||
+        !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint)) {
+      report.status = 'existing_endpoint_required'; return report;
+    }
+    report.last_stage = 'configuration';
+    props = PropertiesService.getScriptProperties(); before = snapshot();
+    const flagNames = ['BRIDGE_INTAKE_ENABLED', 'BRIDGE_DELIVERY_ENABLED',
+      'BRIDGE_MIGRATION_ENABLED', 'BRIDGE_SCHEDULER_BINDING_REVIEWED'];
+    flagNames.forEach(function(k) {
+      const v = props.getProperty(k);
+      report.flags[k] = v === 'true' ? 'enabled' : v === 'false' ? 'disabled' : v === null ? 'unset' : 'invalid';
+    });
+    if (props.getProperty(flagNames[0]) !== 'true' || props.getProperty(flagNames[3]) !== 'true' ||
+        props.getProperty(flagNames[1]) !== 'false' || props.getProperty(flagNames[2]) !== 'false') {
+      report.status = 'flags_require_review'; return report;
+    }
+    const key = props.getProperty('BRIDGE_INTAKE_HMAC_KEY');
+    const token = props.getProperty('NOTION_TOKEN');
+    const folder = props.getProperty('BRIDGE_RECEIPT_FOLDER_ID');
+    const source = props.getProperty('BRIDGE_FITNESS_DATA_SOURCE_ID');
+    report.configuration = {hmac_format_valid: typeof key === 'string' && /^[a-f0-9]{64}$/.test(key),
+      notion_token_present: typeof token === 'string' && !!token.trim() && !/[\r\n]/.test(token),
+      receipt_folder_present: typeof folder === 'string' && !!folder.trim(), source_matches_scheduler: false};
+    try { report.configuration.source_matches_scheduler = typeof RPOS !== 'undefined' && !!RPOS &&
+      rposBridgeUuid_(source) === rposBridgeUuid_(RPOS.fitnessDataSourceId); } catch (ignore) {}
+    if (!Object.keys(report.configuration).every(function(k) { return report.configuration[k]; })) {
+      report.status = 'configuration_requires_review'; return report;
+    }
+    report.last_stage = 'journal_selection';
+    const prefix = 'RPOS_BRIDGE_DELIVERY_';
+    const keys = props.getKeys().filter(function(k) { return k.indexOf(prefix) === 0; });
+    if (keys.length > 100) { report.status = 'bounded_selection_required'; return report; }
+    const confirmed = [];
+    for (let i = 0; i < keys.length; i++) {
+      const id = keys[i].slice(prefix.length);
+      let intent;
+      try { intent = JSON.parse(props.getProperty(keys[i])); }
+      catch (ignore) { report.status = 'journal_requires_review'; return report; }
+      if (!/^[a-f0-9]{64}$/.test(id) || !intent || intent.receipt_id !== id ||
+          !/^[a-f0-9]{64}$/.test(intent.record_hash || '') ||
+          ['attempting', 'confirmed'].indexOf(intent.state) < 0) {
+        report.status = 'journal_requires_review'; return report;
+      }
+      if (intent.state === 'confirmed') confirmed.push({status: 'staged', receipt_id: id,
+        record_hash: intent.record_hash});
+    }
+    report.selection.confirmed_journal_count = confirmed.length;
+    if (confirmed.length !== 1) { report.status = 'one_confirmed_receipt_required'; return report; }
+    const receipt = confirmed[0], sourceId = rposBridgeUuid_(source);
+    report.last_stage = 'drive_open';
+    const store = rposBridgeDriveStore_(folder, props);
+    report.last_stage = 'local_acknowledgement';
+    const localStart = Date.now();
+    const http = {request: function(method, path, payload) {
+      if (!(method === 'GET' && /^\/(?:data_sources|pages|blocks)\//.test(path) &&
+          !/\/\/|#/.test(path)) && !(method === 'POST' && path === '/data_sources/' + sourceId + '/query')) {
+        rposBridgeFailure_('delivery_conflict');
+      }
+      if (report.local_notion_http.length >= 100 || elapsed(localStart) > 60000) {
+        rposBridgeFailure_('delivery_error');
+      }
+      const stage = path.indexOf('/data_sources/') === 0 ? (method === 'POST' ? 'uid_query' : 'schema') :
+        path.indexOf('/blocks/') === 0 ? 'evidence_children' :
+          path.indexOf('/properties/') >= 0 ? 'rich_text_property' : 'page';
+      const step = {stage: stage, http_status: null, elapsed_ms: 0};
+      report.local_notion_http.push(step);
+      const start = Date.now();
+      try {
+        const options = {method: method.toLowerCase(), muteHttpExceptions: true, followRedirects: false,
+          headers: {Authorization: 'Bearer ' + token, 'Notion-Version': '2026-03-11'},
+          contentType: 'application/json'};
+        if (payload !== undefined) {
+          options.payload = JSON.stringify(payload);
+          if (Utilities.newBlob(options.payload).getBytes().length > 500000) rposBridgeFailure_('delivery_error');
+        }
+        const response = UrlFetchApp.fetch('https://api.notion.com/v1' + path, options);
+        step.http_status = response.getResponseCode();
+        if (step.http_status < 200 || step.http_status >= 300) rposBridgeFailure_('delivery_error');
+        const raw = response.getContentText();
+        if (Utilities.newBlob(raw).getBytes().length > 8000000) rposBridgeFailure_('delivery_error');
+        return JSON.parse(raw);
+      } finally { step.elapsed_ms = elapsed(start); }
+    }};
+    const localResult = rposBridgeAcknowledgement_(receipt, {lock: LockService.getScriptLock(),
+      sha256: rposBridgeSha_, uuid: rposBridgeUuid_,
+      journal: {get: function(id) { const v = props.getProperty(prefix + id); return v ? JSON.parse(v) : null; }},
+      migrationJournal: {get: function(id) { const v = props.getProperty('RPOS_BRIDGE_MIGRATION_' + id);
+        return v ? JSON.parse(v) : null; }},
+      store: {find: function(id) { return store.find(id); }, getIntent: function(id) { return store.getIntent(id); }},
+      remote: function() { return rposBridgeNotionPort_(http, sourceId, rposBridgeSha_); }});
+    report.local = checkResponse(JSON.stringify(localResult), 'rpos.exercise.delivery.receipt.v1');
+    report.local.elapsed_ms = elapsed(localStart);
+    if (snapshot() !== before) { report.status = 'concurrent_change_requires_review'; return report; }
+    report.last_stage = 'deployed_query';
+    const time = Math.floor(Date.now() / 1000);
+    const schema = 'rpos.exercise.acknowledgement.v1';
+    const signature = rposBridgeHex_(Utilities.computeHmacSha256Signature(schema + '\n' + time + '\n' +
+      receipt.receipt_id + '\n' + receipt.record_hash, key, Utilities.Charset.UTF_8));
+    const body = JSON.stringify({schema_version: schema, sent_at: time, receipt_id: receipt.receipt_id,
+      record_hash: receipt.record_hash, signature: signature});
+    const remoteStart = Date.now();
+    report.deployed = {status: 'transport_error', initial_http_status: null, http_status: null, elapsed_ms: 0};
+    try {
+      let response = UrlFetchApp.fetch(endpoint, {method: 'post', contentType: 'application/json; charset=utf-8',
+        headers: {Accept: 'application/json'}, payload: body, muteHttpExceptions: true, followRedirects: false});
+      report.deployed.initial_http_status = response.getResponseCode();
+      if ([302, 303].indexOf(response.getResponseCode()) >= 0) {
+        const headers = response.getAllHeaders();
+        const location = headers.Location || headers.location;
+        if (typeof location !== 'string' || /[\u0000-\u0020\\]/.test(location) ||
+            !/^https:\/\/script\.googleusercontent\.com\/macros\/echo\?[^#]+$/.test(location)) {
+          report.deployed.status = 'endpoint_access'; report.status = 'server_review_required'; return report;
+        }
+        // Never forward the signed POST body or credentials to the content host.
+        response = UrlFetchApp.fetch(location, {method: 'get', headers: {Accept: 'application/json'},
+          muteHttpExceptions: true, followRedirects: false});
+      }
+      const code = response.getResponseCode(); report.deployed.http_status = code;
+      const headers = response.getAllHeaders();
+      const contentType = String(headers['Content-Type'] || headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      const result = code === 429 || code >= 500 && code <= 599 ? {status: 'http_retry'} :
+        code < 200 || code >= 300 || contentType !== 'application/json' ? {status: 'endpoint_access'} :
+          checkResponse(response.getContentText(), 'rpos.exercise.acknowledgement.receipt.v1',
+            receipt.receipt_id, receipt.record_hash);
+      Object.keys(result).forEach(function(k) { report.deployed[k] = result[k]; });
+    } finally { report.deployed.elapsed_ms = elapsed(remoteStart); }
+    report.status = report.local.status === 'confirmed' && report.deployed.status === 'confirmed' ?
+      'server_reads_confirmed_android_recovery_not_checked' : 'server_review_required';
+  } catch (ignore) { report.status = 'review_error_details_suppressed'; }
+  finally {
+    if (props && before !== undefined) {
+      try { report.script_properties_unchanged = snapshot() === before; } catch (ignore) {}
+      if (!report.script_properties_unchanged) report.status = 'concurrent_change_requires_review';
+    }
+    report.elapsed_ms = elapsed(began);
+  }
+  return report;
+}

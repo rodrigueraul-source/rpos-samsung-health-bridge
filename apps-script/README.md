@@ -4,9 +4,22 @@ This runtime targets the user-selected existing Apps Script scheduler.
 The initial web deployment was published 06-Oct. Later checkpoints verified
 private signed intake, bounded canonical delivery, scheduler reuse and the
 v0.5 phone's confirmed receipt. Intake/binding are ON; continuous delivery and
-migration remain OFF. The new dedicated read-only query is source preparation
-until the owner publishes a new version of the same deployment. Saving editor
-changes alone does not update that versioned endpoint.
+migration remain OFF. A public negative-authentication check now observes the
+dedicated read-only query contract; this does not prove authenticated phone
+recovery or the exact deployed source hash. The v0.6 recovery checkpoint remains
+pending. Saving editor changes alone does not update a versioned endpoint.
+
+## Read-only review for a pending recovery retry
+
+v0.6 displays the backoff but hides its retry reason. The separate
+`BridgeRecoveryReview.gs.txt` operator compares a read-only local receipt check
+with one signed query to the existing deployment. It reports safe statuses,
+local Notion HTTP phases/codes and elapsed times, without health records,
+identities, credentials, raw responses or redirect URLs. Script Properties are
+compared before/after; unexpected flags, configuration, journal selection and
+concurrent changes fail closed. The generated runtime bundle and Android APK
+do not change. See [recovery review](../docs/recovery-review.md) for the one-file
+owner handoff. This is server diagnosis, not another integration milestone.
 
 ## What is implemented
 
