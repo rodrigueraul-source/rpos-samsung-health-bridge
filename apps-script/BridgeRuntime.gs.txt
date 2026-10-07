@@ -473,18 +473,46 @@ function rposBridgeAcknowledgeReceipt_(receipt, properties) {
     const normalizedSourceId = rposBridgeUuid_(sourceId);
     let store;
     function currentStore() { return store || (store = rposBridgeDriveStore_(folderId, properties)); }
+    // Receipt reads must not depend on delivery's mutation-capable adapters.
+    // The independently verified local review uses these same read-only ports.
+    function journal(prefix) {
+      return {get: function(id) {
+        const raw = properties.getProperty(prefix + id);
+        return raw ? JSON.parse(raw) : null;
+      }};
+    }
     return rposBridgeAcknowledgement_(receipt, {
       lock: LockService.getScriptLock(), sha256: rposBridgeSha_, uuid: rposBridgeUuid_,
-      journal: rposBridgePropertyJournal_(properties, 'RPOS_BRIDGE_DELIVERY_'),
-      migrationJournal: rposBridgePropertyJournal_(properties, 'RPOS_BRIDGE_MIGRATION_'),
+      journal: journal('RPOS_BRIDGE_DELIVERY_'),
+      migrationJournal: journal('RPOS_BRIDGE_MIGRATION_'),
       store: {find: function(id) { return currentStore().find(id); },
         getIntent: function(id) { return currentStore().getIntent(id); }},
       remote: function() {
-        const http = rposBridgeNotionHttp_(token);
         const readOnly = {request: function(method, path, payload) {
           if (method !== 'GET' && !(method === 'POST' &&
               path === '/data_sources/' + normalizedSourceId + '/query')) rposBridgeFailure_('delivery_conflict');
-          return http.request(method, path, payload);
+          if (!/^\/(?:data_sources|pages|blocks)\//.test(path) || /\/\/|#/.test(path)) {
+            rposBridgeFailure_('delivery_conflict');
+          }
+          if (typeof token !== 'string' || !token.trim() || /[\r\n]/.test(token)) {
+            rposBridgeFailure_('not_configured');
+          }
+          const options = {method: method.toLowerCase(), muteHttpExceptions: true, followRedirects: false,
+            headers: {Authorization: 'Bearer ' + token, 'Notion-Version': '2026-03-11'},
+            contentType: 'application/json'};
+          if (payload !== undefined) {
+            options.payload = JSON.stringify(payload);
+            if (Utilities.newBlob(options.payload).getBytes().length > 500000) rposBridgeFailure_('delivery_conflict');
+          }
+          const response = UrlFetchApp.fetch('https://api.notion.com/v1' + path, options);
+          if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+            rposBridgeFailure_('delivery_error');
+          }
+          const raw = response.getContentText();
+          if (Utilities.newBlob(raw).getBytes().length > 8000000) rposBridgeFailure_('delivery_error');
+          const result = JSON.parse(raw);
+          if (!result || Array.isArray(result) || typeof result !== 'object') rposBridgeFailure_('delivery_error');
+          return result;
         }};
         return rposBridgeNotionPort_(readOnly, normalizedSourceId, rposBridgeSha_);
       }

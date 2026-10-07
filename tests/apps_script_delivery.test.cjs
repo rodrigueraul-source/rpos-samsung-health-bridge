@@ -586,8 +586,26 @@ function ackFixture(confirmed = true) {
   const deps = {...f.deps, uuid: f.c.rposBridgeUuid_, migrationJournal: f.journal(new Map()),
     journal: {get: f.deps.journal.get}, // No mutation capability is passed to acknowledgement.
     remote: () => {reads++; return f.remote;}};
-  return {...f, receipt, ackDeps: deps, reads: () => reads,
+  const result = {...f, receipt, ackDeps: deps, reads: () => reads,
     ack: () => clone(f.c.rposBridgeAcknowledgement_(receipt, deps))};
+  f.c.Utilities = {newBlob: text => ({getBytes: () => [...Buffer.from(text, 'utf8')]})};
+  installNotionReadService(result);
+  return result;
+}
+
+function installNotionReadService(f, observed = () => {}) {
+  f.c.UrlFetchApp = {fetch(url, options) {
+    assert.ok(url.startsWith('https://api.notion.com/v1/'));
+    const method = options.method.toUpperCase(), route = url.slice('https://api.notion.com/v1'.length);
+    assert.ok(method === 'GET' || method === 'POST' && route === '/data_sources/' + DS + '/query');
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+    assert.equal(options.headers['Notion-Version'], '2026-03-11');
+    assert.equal(options.followRedirects, false);
+    const body = options.payload === undefined ? undefined : JSON.parse(options.payload);
+    observed(method, route, body);
+    const result = f.http.request(method, route, body);
+    return {getResponseCode: () => 200, getContentText: () => JSON.stringify(result)};
+  }};
 }
 
 test('confirmed acknowledgement checks fresh evidence without journal or remote mutations across restart', () => {
@@ -663,10 +681,7 @@ test('doPost delivery-OFF acknowledgement uses fresh native read-only port and k
   f.c.ContentService = {MimeType: {JSON: 'json'}, createTextOutput: text => ({text, setMimeType() {return this;}})};
   f.c.RPOS = {fitnessDataSourceId: DS}; f.c.rposBridgeSha_ = sha;
   f.c.rposBridgeDriveStore_ = () => f.deps.store;
-  f.c.rposBridgeNotionHttp_ = () => ({request(method, path, payload) {
-    assert.ok(method === 'GET' || method === 'POST' && path === '/data_sources/' + DS + '/query');
-    methods.push(method); return f.http.request(method, path, payload);
-  }});
+  installNotionReadService(f, method => methods.push(method));
   f.c.rposBridgeDeliverReceipt = () => {throw Error('delivery remains OFF');};
   let staged = true;
   f.c.rposBridgeHandle_ = () => staged ? clone(f.receipt) : f.c.rposBridgeResult_('unauthorized');
@@ -714,7 +729,7 @@ test('real signed intake can acknowledge a prior delivery without any new remote
     newBlob:s=>({getBytes:()=>[...Buffer.from(s,'utf8')]}),
     computeDigest:(alg,s)=>[...crypto.createHash('sha256').update(s).digest()],
     computeHmacSha256Signature:(s,k)=>[...crypto.createHmac('sha256',k).update(s).digest()]};
-  f.c.RPOS={fitnessDataSourceId:DS}; f.c.rposBridgeNotionHttp_=()=>f.http;
+  f.c.RPOS={fitnessDataSourceId:DS};
   let stagingSaves=0;
   f.c.rposBridgeDriveStore_=()=>({...f.deps.store,setIntent:(id,value)=>{
     stagingSaves++;assert.equal(id,f.stored.receipt_id);assert.equal(value.state,'staged');
@@ -756,10 +771,7 @@ function signedQueryFixture() {
   f.c.rposBridgeHandle_ = () => {throw Error('receipt query must not invoke intake');};
   f.c.rposBridgeDeliverReceipt = () => {throw Error('receipt query must not invoke a worker');};
   f.methods = [];
-  f.c.rposBridgeNotionHttp_ = () => ({request(method, p, payload) {
-    assert.ok(method === 'GET' || method === 'POST' && p === '/data_sources/' + DS + '/query');
-    f.methods.push(method); return f.http.request(method, p, payload);
-  }});
+  installNotionReadService(f, method => f.methods.push(method));
   f.request = {schema_version: 'rpos.exercise.acknowledgement.v1', sent_at: Math.floor(Date.now()/1000),
     receipt_id: f.stored.receipt_id, record_hash: f.stored.record_hash};
   f.sign = request => ({...request, signature: crypto.createHmac('sha256', key).update(
@@ -846,4 +858,53 @@ test('signed query pure handler matches independent cross-language synthetic HMA
   const failed = JSON.stringify(c.rposBridgeSignedAcknowledgement_(JSON.stringify(request), deps));
   assert.ok(!failed.includes('private token')); assert.ok(failed.includes('delivery_error'));
   assert.equal(c.rposBridgeSignedAcknowledgement_(JSON.stringify(request)+' '.repeat(4096), deps).status, 'invalid_request');
+});
+
+test('signed receipt query confirms without the delivery HTTP and journal adapters', () => {
+  const statuses = [];
+  for (const missing of [['rposBridgePropertyJournal_'], ['rposBridgeNotionHttp_'],
+      ['rposBridgePropertyJournal_', 'rposBridgeNotionHttp_']]) {
+    const f = signedQueryFixture();
+    assert.equal(f.ack().status, 'confirmed'); // Same core with read-only dependencies succeeds.
+    const before = JSON.stringify([...f.properties]);
+    for (const name of missing) {
+      f.c[name] = undefined;
+      assert.equal(vm.runInContext('typeof ' + name, f.c), 'undefined');
+    }
+    const result = f.query();
+    assert.equal(result.receipt_id, f.stored.receipt_id);
+    assert.equal(result.record_hash, f.stored.record_hash);
+    statuses.push(result.status);
+    assert.equal(result.notion_confirmed, result.status === 'confirmed');
+    assert.equal(f.state.patches.length, 2);
+    assert.equal(JSON.stringify([...f.properties]), before);
+  }
+  assert.deepEqual(statuses, ['confirmed', 'confirmed', 'confirmed']);
+});
+
+test('receipt read transport errors and malformed responses remain retryable and redact private details', () => {
+  for (const fault of ['http', 'json', 'transport', 'oversized']) {
+    const f = signedQueryFixture(), before = JSON.stringify([...f.properties]);
+    f.c.UrlFetchApp = {fetch() {
+      if (fault === 'transport') throw Error('private token health body');
+      return {getResponseCode: () => fault === 'http' ? 503 : 200,
+        getContentText: () => fault === 'json' ? 'private token health body' : 'x'.repeat(8000001)};
+    }};
+    const response = f.query();
+    assert.equal(response.status, 'delivery_error'); assert.equal(response.notion_confirmed, false);
+    assert.equal(JSON.stringify(response).includes('private token'), false);
+    assert.equal(JSON.stringify([...f.properties]), before); assert.equal(f.state.patches.length, 2);
+  }
+});
+
+test('receipt read transport rejects unsafe routes and excessive payload before sending a token', () => {
+  for (const [method, route, payload] of [['GET', '//pages/' + PAGE], ['GET', '/pages/' + PAGE + '#private'],
+      ['POST', '/data_sources/' + BLOCK + '/query', {}],
+      ['POST', '/data_sources/' + DS + '/query', {value: 'x'.repeat(500001)}]]) {
+    const f = signedQueryFixture();
+    f.c.UrlFetchApp = {fetch() {throw Error('must reject before network');}};
+    f.c.rposBridgeNotionPort_ = http => ({findUid() {http.request(method, route, payload); return [PAGE];}});
+    assert.equal(f.query().status, 'delivery_conflict'); assert.equal(f.methods.length, 0);
+    assert.equal(f.state.patches.length, 2);
+  }
 });

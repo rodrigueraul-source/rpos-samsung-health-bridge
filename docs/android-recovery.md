@@ -33,6 +33,27 @@ continuous-delivery flag. Its Notion port permits only GET and the configured
 data-source POST query. Missing journal/binding is `unresolved`, not success.
 An attempted uncertain journal is not repaired or rewritten by this query.
 
+Receipt recognition constructs its own read-only property journals and Notion
+HTTP port. It does not call the delivery adapters `rposBridgePropertyJournal_`
+or `rposBridgeNotionHttp_`. A partial installation could previously pass a
+direct core check but return `delivery_error` from a valid signed query when
+one of those delivery adapters was absent. The receipt path now reads the same
+properties and remote evidence directly, without acquiring delivery's setters
+or general HTTP capabilities. Request/response, authentication, identity and
+confirmation criteria are unchanged; HTTP, parse and transport failures still
+cannot claim confirmation.
+
+For this repair, replace the existing marked `BridgeEndpoint.gs` section inside
+`BridgeRuntime.gs` with all of `BridgeEndpoint-ReceiptRead-Repair.txt`, including
+both boundary markers. The builder checks that this replacement matches the
+Endpoint source and seven-module bundle. Publish a new version of the existing
+deployment, then run the existing `rposBridgeReviewRecovery` once. This is a
+module replacement in the existing project; it needs no additional `.gs` file,
+phone reinstall or flag change. A synthetic regression removes both delivery
+adapters and exercises signed recognition through the actual dispatcher with
+fresh evidence, unchanged journals and zero new writes. It does not establish
+the specific cause in a remote installation or replace device evidence.
+
 ## Durable controlled test
 
 **TEST RECEIPT RECOVERY** requires exactly one ordinary confirmed receipt with

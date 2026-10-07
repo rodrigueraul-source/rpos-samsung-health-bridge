@@ -1,3 +1,4 @@
+// BEGIN BridgeEndpoint.gs
 /* Add runtime .gs files to the existing scheduler only after reviewing setup. */
 function rposBridgeHex_(bytes) {
   return bytes.map(function(byte) { return ('0' + ((byte + 256) % 256).toString(16)).slice(-2); }).join('');
@@ -284,3 +285,4 @@ function rposBridgeAcknowledgeReceipt_(receipt, properties) {
       status: 'delivery_error', notion_confirmed: false};
   }
 }
+// END BridgeEndpoint.gs
