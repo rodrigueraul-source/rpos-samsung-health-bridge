@@ -1,4 +1,36 @@
-# Samsung delivery APK evidence — 06-Oct-2026
+# Samsung delivery APK evidence
+
+## Current v0.6 recovery update
+
+The same delivery signing key was recovered from its retained private backup.
+The new release matches the installed v0.5 package and certificate:
+
+- `com.rpos.bridge.delivery`, code 6, `0.6.0-delivery`
+- APK `RPOS-Samsung-Health-Bridge-Delivery-v0.6.0.apk`, 3,901,210 bytes
+- APK SHA256 `54ddc5e5603fe9f5a807f992f3cdb2e232ddd7bd5da3f70746ed8bb4d46360eb`
+- Certificate SHA256 `765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3`
+- APK verification and 16 KiB alignment PASS; no embedded endpoint, credentials
+  or real Exercise record; SDK AAR hash unchanged from the historical build
+- Actual Gradle `testMockDebugUnitTest` and `assembleDeliveryRelease` passed;
+  41 unit cases, zero failures/errors/skips, release lint-vital PASS
+- 169 Apps Script tests PASS; reproducible runtime and diff checks PASS
+- Replacing only the marked Endpoint module reproduces the complete tested
+  bundle; the other six runtime modules are byte-unchanged
+
+Toolchain coordinates remain Gradle 8.13 / AGP 8.13.2 / Kotlin 2.3.20 / JDK
+17.0.20 / SDK36 / build-tools36. Environment restoration recovered the complete
+verified Gradle compiler jar, JDK compiler and correct proxy routing; no source
+or dependency downgrade was used. Remote CI must be checked separately.
+
+The new test is a read-only receipt query with a separate encrypted checkpoint
+and deliberate discard of the first validated real confirmation. It requires
+the existing Google deployment update, same-package phone update and physical
+checkpoint/reboot/recheck. It is not proof of a natural outage or interrupted
+Notion write. BUILD remains 66.67%, 4/6; delivery/migration stay OFF.
+
+Machine-readable artifact/bundle hashes are in `android-recovery-build-evidence.json`.
+
+## Historical v0.5 build — 06-Oct-2026
 
 The owner approved the Android SDK license at 09:47 America/Mexico_City.
 The required android-sdk-license was accepted; platform 36, build-tools
@@ -50,7 +82,7 @@ locations or signing filename searches. The new package coexists with the old
 app. No old app uninstall, data clearing, private queue extraction or migration
 was performed. Future delivery-package updates must retain the new key.
 
-## Live backend checkpoint and remaining gates
+## Historical backend checkpoint and gates at the v0.5 build
 
 Web app version 1 was published at 09:40 with explicit owner approval at 09:33:
 execute as owner, anonymous access, endpoint initially OFF. External empty POST
@@ -82,7 +114,7 @@ Neither release automatically reads or uploads in the background. BUILD35
 remains the approved Registry baseline; this build does not establish Bridge
 PASS, BR05/BR06 closure or an 80% completion claim.
 
-## Live wrapper and final source verification
+## Historical wrapper and source verification before cutover
 
 Saved Código.gs was copied for private static review: **40,432 bytes / SHA256
 ea3e36898ec4d35896387ef478730b2dae5ef00223343284d6a08ce3b9195086**.

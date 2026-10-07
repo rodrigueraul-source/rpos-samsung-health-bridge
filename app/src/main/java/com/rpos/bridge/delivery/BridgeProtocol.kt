@@ -103,6 +103,55 @@ object BridgeProtocol {
     }
 
     class Receipt(val state: String, val reason: String, val recordHash: String? = null)
+    fun acknowledgementRequest(id: String, hash: String, key: String, unixSeconds: Long): String {
+        if (!Regex("[a-f0-9]{64}").matches(id) || !Regex("[a-f0-9]{64}").matches(hash) ||
+            !Regex("[a-f0-9]{64}").matches(key) || unixSeconds < 0) throw BridgeFailure("configuration_invalid")
+        val schema = "rpos.exercise.acknowledgement.v1"
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(key.toByteArray(UTF_8), "HmacSHA256"))
+        val signature = mac.doFinal("$schema\n$unixSeconds\n$id\n$hash".toByteArray(UTF_8))
+            .joinToString("") { "%02x".format(it.toInt() and 255) }
+        return gson.toJson(JsonObject().apply {
+            addProperty("schema_version", schema); addProperty("sent_at", unixSeconds)
+            addProperty("receipt_id", id); addProperty("record_hash", hash)
+            addProperty("signature", signature)
+        })
+    }
+
+    fun acknowledgementResponse(raw: String, expectedId: String, expectedHash: String): Receipt {
+        if (raw.toByteArray(UTF_8).size > 4096) throw BridgeFailure("invalid_response")
+        try {
+            val r = obj(raw)
+            if (r.get("schema_version")?.asString == "rpos.exercise.intake.receipt.v1") {
+                // A previous deployment cannot understand this read-only request.
+                if (r.get("status")?.asString == "invalid_request" &&
+                    r.get("notion_confirmed")?.isJsonPrimitive == true &&
+                    r.get("notion_confirmed").asJsonPrimitive.isBoolean &&
+                    r.get("notion_confirmed").asBoolean == false) throw BridgeFailure("backend_update_required")
+                throw BridgeFailure("invalid_response")
+            }
+            if (r.get("schema_version")?.asString != "rpos.exercise.acknowledgement.receipt.v1" ||
+                r.get("notion_confirmed")?.isJsonPrimitive != true ||
+                !r.get("notion_confirmed").asJsonPrimitive.isBoolean) throw BridgeFailure("invalid_response")
+            val s = r.get("status")?.asString ?: throw BridgeFailure("invalid_response")
+            if (r.get("notion_confirmed").asBoolean != (s == "confirmed")) throw BridgeFailure("invalid_response")
+            if (s == "confirmed" && (r.get("receipt_id")?.asString != expectedId ||
+                    r.get("record_hash")?.asString != expectedHash)) throw BridgeFailure("receipt_conflict")
+            if (r.get("receipt_id")?.isJsonNull == false &&
+                (r.get("receipt_id").asString != expectedId || r.get("record_hash")?.asString != expectedHash)) {
+                throw BridgeFailure("receipt_conflict")
+            }
+            return when (s) {
+                "confirmed" -> Receipt("confirmed", "confirmed", expectedHash)
+                "busy", "storage_unresolved", "delivery_error" -> Receipt("retry", s, expectedHash)
+                "disabled", "not_configured", "invalid_request", "unauthorized", "unresolved",
+                "needs_migration", "delivery_conflict" -> Receipt("blocked", s, expectedHash)
+                else -> throw BridgeFailure("invalid_response")
+            }
+        } catch (e: BridgeFailure) { throw e }
+        catch (_: Exception) { throw BridgeFailure("invalid_response") }
+    }
+
     fun response(raw: String, expectedId: String, priorHash: String?): Receipt {
         if (raw.toByteArray(UTF_8).size > 32768) throw BridgeFailure("invalid_response")
         try {

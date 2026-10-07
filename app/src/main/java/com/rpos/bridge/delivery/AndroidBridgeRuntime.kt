@@ -74,6 +74,38 @@ class AndroidBridgeRuntime private constructor(context: Context) {
             gson.toJson(mapOf("schema_version" to "rpos.android.queue.v1", "entries" to entries)))
     }, AppsScriptTransport(), { System.currentTimeMillis() / 1000 })
 
+    val recovery = BridgeRecovery(queue, object : RecoveryPersistence {
+        override fun load(): RecoveryCheckpoint? = vault.read("bridge-recovery.enc")?.let {
+            try {
+                val envelope = com.google.gson.JsonParser.parseString(it).asJsonObject
+                if (envelope.get("schema_version")?.asString != "rpos.android.recovery.v1") {
+                    throw BridgeFailure("recovery_storage_error")
+                }
+                val value = envelope.getAsJsonObject("checkpoint")
+                val strings = listOf("receiptId", "recordHash", "payloadHash", "endpointHash", "state", "reason")
+                if (strings.any { name -> value.get(name)?.isJsonPrimitive != true ||
+                        !value.get(name).asJsonPrimitive.isString } ||
+                    value.get("discardPending")?.isJsonPrimitive != true ||
+                    !value.get("discardPending").asJsonPrimitive.isBoolean) throw BridgeFailure("recovery_storage_error")
+                for (name in listOf("attempts", "nextAt")) {
+                    if (value.get(name)?.isJsonPrimitive != true || !value.get(name).asJsonPrimitive.isNumber ||
+                        !Regex("[0-9]{1,19}").matches(value.get(name).asString)) throw BridgeFailure("recovery_storage_error")
+                }
+                gson.fromJson(value, RecoveryCheckpoint::class.java) ?: throw BridgeFailure("recovery_storage_error")
+            } catch (_: Exception) { throw BridgeFailure("recovery_storage_error") }
+        }
+        override fun save(value: RecoveryCheckpoint) = vault.write("bridge-recovery.enc",
+            gson.toJson(mapOf("schema_version" to "rpos.android.recovery.v1", "checkpoint" to value)))
+    }, AppsScriptTransport(), { System.currentTimeMillis() / 1000 })
+
+    @Synchronized fun summary(): String = queue.summary() + recovery.summary()
+    @Synchronized fun checkPending(): String {
+        val config = config() ?: throw BridgeFailure("not_configured")
+        return if (recovery.active()) recovery.resume(config) else {
+            queue.sendDue(config, max = 1) + recovery.summary()
+        }
+    }
+
     @Synchronized fun config(): BridgeConfig? = vault.read("bridge-config.enc")?.let {
         try { val v = com.google.gson.JsonParser.parseString(it).asJsonObject
             BridgeConfig(v.get("endpoint").asString, v.get("signingKey").asString) }

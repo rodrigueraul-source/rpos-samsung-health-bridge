@@ -1,10 +1,12 @@
-# Apps Script intake and delivery preparation — existing scheduler
+# Apps Script intake, bounded delivery and receipt query — existing scheduler
 
-This is the JavaScript runtime preparation for the user-selected existing
-Apps Script scheduler. The user confirmed on 05-Oct-2026 that the reviewed
-`R-POS External Scheduler F V0_3.txt` is the latest saved code. Their screenshot
-shows no active or archived deployments. Time-triggered scheduling is distinct
-from a deployed HTTP web app; no deployment version is currently available.
+This runtime targets the user-selected existing Apps Script scheduler.
+The initial web deployment was published 06-Oct. Later checkpoints verified
+private signed intake, bounded canonical delivery, scheduler reuse and the
+v0.5 phone's confirmed receipt. Intake/binding are ON; continuous delivery and
+migration remain OFF. The new dedicated read-only query is source preparation
+until the owner publishes a new version of the same deployment. Saving editor
+changes alone does not update that versioned endpoint.
 
 ## What is implemented
 
@@ -45,9 +47,14 @@ block and stops on Python v1/legacy evidence as `needs_migration`. Existing
 accepted receipts are not rewritten or treated as automatic-flow proof.
 Synthetic tests are preparation evidence only, not a real outage/device PASS.
 
-## Integration prerequisites (no deployment in this commit)
+## Original installation prerequisites (already completed for the pilot)
 
-Add all six runtime `.gs` files to the existing project after reviewing the change. Do not
+The current project uses the generated `BridgeRuntime.gs` with seven marked
+modules. For the recovery update replace only its existing Endpoint section;
+do not add duplicate handlers/files. The following describes original setup
+for a new installation, not a repeat request for the accepted pilot.
+
+Add the runtime modules to the existing project after reviewing the change. Do not
 replace `Code.gs`, install triggers, run scheduler test handlers or modify its
 existing Notion/IFTTT properties. The reviewed snapshot has no `doPost`; recheck
 the live project before adding this endpoint to avoid a duplicate handler.
@@ -139,11 +146,27 @@ context reset, changed records, lock contention, journal failures, lost create
 responses, visibility gaps, duplicates/corruption and error redaction. These
 tests do not authorize Drive, create an endpoint or write real evidence.
 
-Android v0.5 now prepares private queue/signing/foreground send/check against
-this contract; see `../docs/android-delivery.md`. Remaining operational work:
-Samsung build/signing, live reviewed-target/alias binding and migration;
-reviewed deployment/auth setup; physical handoff/actual cross-system recovery;
-remaining Samsung errors and calorie semantics. Registry stays BUILD 35%.
+Android v0.5 has accepted private intake and a confirmed phone receipt.
+v0.6 prepares the separate recovery query/checkpoint; see
+`../docs/android-recovery.md`. Remaining work is its Google/phone update and
+controlled physical test, actual uncertain-write recovery, remaining Samsung
+errors and operational closure. Registry stays BUILD 66.67%, four of six.
+
+## Dedicated signed read-only receipt query
+
+POST `rpos.exercise.acknowledgement.v1` with only schema, integer `sent_at`,
+receipt ID, record hash and signature. Sign the schema, time, ID and hash joined
+by LF using the same dedicated HMAC text key. The body is limited to 4096 UTF-8
+bytes and the timestamp to ±300 seconds. Exercise payload fields are rejected.
+Response schema is `rpos.exercise.acknowledgement.receipt.v1`; only fresh full
+identity/evidence/journal checks can return `confirmed` and boolean true.
+
+This dispatch path never invokes intake or the delivery worker, including when
+the continuous-delivery flag is ON. It creates no Drive file, sets no property,
+writes no journal and permits no Notion PATCH/create. Missing prior ordinary
+journal/binding returns `unresolved`. It cannot repair an uncertain attempted
+write. Native-boundary tests enforce these restrictions with services that
+would otherwise mutate. Publication and physical recovery remain separate.
 
 Official API references:
 - https://developers.google.com/apps-script/guides/web

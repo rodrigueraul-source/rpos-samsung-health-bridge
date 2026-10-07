@@ -9,8 +9,12 @@ Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness*
 Entrega canónica acotada y continuidad scheduler confirmadas el 06-Oct-2026:
 registro SDK/aliases/métricas conservados, replay sin escrituras y cero
 sesiones duplicadas. Intake y binding ON; entrega continua/migración OFF.
-El acknowledgement del teléfono está preparado/probado, no desplegado.
-Recuperación física y cierre Samsung siguen pendientes; ver
+La captura del teléfono del 06-Oct 21:31 muestra `confirmed: 1` en v0.5.0-delivery.
+El propietario reportó reinicio a las 21:38; la imagen repetida era idéntica,
+por lo que no acredita una lectura independiente después del reinicio.
+La recuperación v0.6 prepara una consulta firmada del recibo existente y un
+checkpoint separado para una prueba física controlada. Recuperación real
+ante escritura incierta y cierre Samsung siguen pendientes; ver
 `docs/progress-evidence.md`. No es Bridge PASS ni una estimación de esfuerzo.
 
 La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Android faltante sin reemplazar el MVP Python ya validado.
@@ -26,20 +30,26 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 - Device UAT documentado.
 - Exportación v0.3 de UID, tiempos, origen/dispositivo y detalles objetivos por sesión.
 - Staging SQLite privado por `(source, uid)` con intentos de escritura persistentes y confirmación protegida por hash.
-- Coordinador v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas. La interfaz de transporte debe conectarse al runner de evidencia existente; no está desplegada.
+- Coordinador Python v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas; el flujo operativo elegido usa Apps Script.
 - Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
-- Adaptador REST de Notion y CLI para el host aprobado: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado y probado con servicio sintético; no desplegado. Ver `docs/notion-transport.md`.
-- Apps Script preparado: receptor HMAC y staging; entrega a páginas existentes con revisión ligada al hash, intención duradera y lectura posterior; wrapper de alias del scheduler. 67 pruebas JavaScript sintéticas; sin instalación, despliegue ni nuevas escrituras reales. Ver `apps-script/README.md`.
-- Android v0.5 preparado: cola privada cifrada, firma del export original, envío/check en primer plano y reintentos con backoff. 24 nuevas pruebas JVM locales; configuración/despliegue/firmado Samsung y UAT real pendientes. Ver `docs/android-delivery.md`.
-- Migración histórica preparada: auditoría de solo lectura, revisión ligada al snapshot, conservación íntegra de bloques anteriores, alias exactos y journal independiente antes de escribir. 84 pruebas JS sintéticas PASS; no aplicada a las dos sesiones reales. Ver `apps-script/README.md`.
+- Adaptador REST de Notion y CLI alternativo: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado con servicios sintéticos; no confundir con el flujo Apps Script operativo. Ver `docs/notion-transport.md`.
+- Apps Script operativo: recepción HMAC privada, entrega canónica acotada con journal/readback y reutilización del scheduler verificadas. Entrega continua/migración OFF. La nueva consulta HMAC de recibo es de sólo lectura incluso con delivery ON; su publicación en Google requiere actualizar la implementación existente. Ver `apps-script/README.md`.
+- Android v0.5 instalado/configurado: cola cifrada, export original, firma/envío/check en primer plano, backoff y un recibo físicamente confirmado. Android v0.6 agrega recuperación separada por consulta sin reenviar el entrenamiento. Ver `docs/android-delivery.md` y `docs/android-recovery.md`.
+- Migración histórica y aliases revisados aplicados en el flujo acotado: los journals/evidencias aceptados se conservan. No volver a migrarlos para probar recuperación.
+
+La actualización v0.6 pasó 41 pruebas Android y 169 Apps Script locales;
+APK release firmado y certificado anterior comparados. Build y hashes:
+`docs/android-delivery-build-evidence.md`. La prueba física sigue pendiente.
 
 ### Gate pendiente
 
 La lectura inicial, el mapeo asistido de UID y el replay controlado ya tienen
 evidencia privada. Dos UID reales y la denegación/restauración de permisos ya
-tienen checkpoints aceptados. Quedan runtime/entrega automática, alias del
-scheduler vigente, otros errores Samsung y recuperación remota real.
-La WBS no define pesos para calcular un nuevo porcentaje; ver
+tienen checkpoints aceptados. El runtime, entrega acotada y alias del scheduler
+ya están verificados. Quedan recuperación real ante resultado incierto,
+otros errores físicos Samsung y cierre operacional repetible.
+Entrega automática continua sigue fuera de la activación autorizada. La WBS
+no define pesos; el conteo actual usa seis hitos explícitos. Ver
 `docs/progress-evidence.md`. Bridge no alcanza PASS hasta demostrar el flujo completo:
 
 `Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`

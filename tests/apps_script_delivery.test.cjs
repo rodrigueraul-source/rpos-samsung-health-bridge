@@ -733,3 +733,117 @@ test('real signed intake can acknowledge a prior delivery without any new remote
   assert.equal(JSON.parse(f.c.doPost(event).text).status,'unauthorized');
   assert.equal(stagingSaves,1);assert.equal(f.state.patches.length,2);
 });
+
+function signedQueryFixture() {
+  const f = ackFixture(), key = 'a'.repeat(64);
+  const properties = new Map([
+    ['BRIDGE_INTAKE_ENABLED', 'true'], ['BRIDGE_INTAKE_HMAC_KEY', key],
+    ['BRIDGE_RECEIPT_FOLDER_ID', 'synthetic-folder'], ['BRIDGE_DELIVERY_ENABLED', 'true'],
+    ['BRIDGE_MIGRATION_ENABLED', 'true'], ['BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true'],
+    ['NOTION_TOKEN', 'synthetic-token'], ['BRIDGE_FITNESS_DATA_SOURCE_ID', DS],
+    ['RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id, JSON.stringify(f.state.intents.get(f.stored.receipt_id))]
+  ]);
+  f.c.PropertiesService = {getScriptProperties: () => ({getProperty: k => properties.get(k),
+    setProperty: () => {throw Error('query must not write properties');}})};
+  f.c.LockService = {getScriptLock: () => f.deps.lock};
+  f.c.ContentService = {MimeType: {JSON: 'json'}, createTextOutput: text => ({text, setMimeType() {return this;}})};
+  f.c.Utilities = {Charset: {UTF_8: 'utf8'}, newBlob: s => ({getBytes: () => [...Buffer.from(s, 'utf8')]}),
+    computeHmacSha256Signature: (s, k) => [...crypto.createHmac('sha256', k).update(s).digest()]};
+  f.c.RPOS = {fitnessDataSourceId: DS}; f.c.rposBridgeSha_ = sha;
+  f.c.rposBridgeDriveStore_ = () => ({...f.deps.store,
+    create: () => {throw Error('query must not create a receipt');},
+    setIntent: () => {throw Error('query must not stage an intake intent');}});
+  f.c.rposBridgeHandle_ = () => {throw Error('receipt query must not invoke intake');};
+  f.c.rposBridgeDeliverReceipt = () => {throw Error('receipt query must not invoke a worker');};
+  f.methods = [];
+  f.c.rposBridgeNotionHttp_ = () => ({request(method, p, payload) {
+    assert.ok(method === 'GET' || method === 'POST' && p === '/data_sources/' + DS + '/query');
+    f.methods.push(method); return f.http.request(method, p, payload);
+  }});
+  f.request = {schema_version: 'rpos.exercise.acknowledgement.v1', sent_at: Math.floor(Date.now()/1000),
+    receipt_id: f.stored.receipt_id, record_hash: f.stored.record_hash};
+  f.sign = request => ({...request, signature: crypto.createHmac('sha256', key).update(
+    request.schema_version + '\n' + request.sent_at + '\n' + request.receipt_id + '\n' + request.record_hash).digest('hex')});
+  f.query = request => JSON.parse(f.c.doPost({postData: {type: 'application/json',
+    contents: JSON.stringify(request || f.sign(f.request))}}).text);
+  f.properties = properties;
+  return f;
+}
+
+test('dedicated signed query rechecks fresh native evidence without staging, mutations or delivery worker even with flags ON', () => {
+  const f = signedQueryFixture(), before = JSON.stringify([...f.properties]);
+  const journals = JSON.stringify([...f.state.intents]);
+  const r = f.query();
+  assert.equal(r.schema_version, 'rpos.exercise.acknowledgement.receipt.v1');
+  assert.equal(r.status, 'confirmed'); assert.equal(r.notion_confirmed, true);
+  assert.equal(r.receipt_id, f.stored.receipt_id); assert.equal(r.record_hash, f.stored.record_hash);
+  assert.ok(f.methods.length > 0); const reads = f.methods.length;
+  assert.equal(f.query().status, 'confirmed'); assert.ok(f.methods.length > reads);
+  assert.equal(f.state.patches.length, 2); assert.equal(JSON.stringify([...f.properties]), before);
+  assert.equal(JSON.stringify([...f.state.intents]), journals);
+});
+
+for (const [name, change, expected] of [
+  ['bad signature', r => {r.signature = '0'.repeat(64);}, 'unauthorized'],
+  ['stale timestamp', r => {r.sent_at -= 301;}, 'unauthorized'],
+  ['future timestamp', r => {r.sent_at += 301;}, 'unauthorized'],
+  ['extra payload', r => {r.payload_json = 'must not stage';}, 'invalid_request'],
+  ['coerced ID', r => {r.receipt_id = [r.receipt_id];}, 'invalid_request'],
+  ['invalid hash', r => {r.record_hash = 'ABC';}, 'invalid_request'],
+  ['fractional time', r => {r.sent_at += 0.5;}, 'invalid_request'],
+  ['negative time', r => {r.sent_at = -1;}, 'invalid_request']
+]) test('signed query rejects ' + name + ' before Drive/Notion', () => {
+  const f = signedQueryFixture(), request = f.sign(f.request); change(request);
+  f.c.rposBridgeDriveStore_ = () => {throw Error('unauthenticated Drive access');};
+  assert.equal(f.query(request).status, expected); assert.equal(f.methods.length, 0);
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('signed query disables cleanly and missing binding/journal cannot claim confirmed', () => {
+  const f = signedQueryFixture(); f.properties.set('BRIDGE_INTAKE_ENABLED', 'false');
+  assert.equal(f.query().status, 'disabled'); f.properties.set('BRIDGE_INTAKE_ENABLED', 'true');
+  f.properties.delete('BRIDGE_RECEIPT_FOLDER_ID'); assert.equal(f.query().status, 'not_configured');
+  f.properties.set('BRIDGE_RECEIPT_FOLDER_ID', 'synthetic-folder');
+  f.properties.set('BRIDGE_SCHEDULER_BINDING_REVIEWED', 'false');
+  assert.equal(f.query().status, 'unresolved'); f.properties.set('BRIDGE_SCHEDULER_BINDING_REVIEWED', 'true');
+  f.properties.delete('RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id);
+  assert.equal(f.query().status, 'unresolved'); assert.equal(f.methods.length, 0);
+});
+
+test('signed query conflicting hash and uncertain journal fail closed without writes', () => {
+  const f = signedQueryFixture();
+  assert.equal(f.query(f.sign({...f.request, record_hash: '0'.repeat(64)})).status, 'delivery_conflict');
+  const intent = {...f.state.intents.get(f.stored.receipt_id), state: 'attempting'};
+  f.properties.set('RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id, JSON.stringify(intent));
+  assert.equal(f.query().status, 'unresolved'); assert.equal(f.methods.length, 0);
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('signed query refuses remote mutation from a misbehaving port', () => {
+  const f = signedQueryFixture();
+  f.c.rposBridgeNotionPort_ = http => ({findUid() {http.request('PATCH', '/pages/' + PAGE, {}); return [PAGE];}});
+  assert.equal(f.query().status, 'delivery_conflict'); assert.equal(f.methods.length, 0);
+});
+
+test('signed query pure handler matches independent cross-language synthetic HMAC vector and redacts errors', () => {
+  const p = path.join(__dirname, 'fixtures/android_acknowledgement_vector.json');
+  const vector = JSON.parse(fs.readFileSync(p, 'utf8'));
+  assert.equal(fs.readFileSync(p, 'utf8'), fs.readFileSync(path.join(__dirname,
+    '../app/src/test/resources/android_acknowledgement_vector.json'), 'utf8'));
+  const c = context(); let reads = 0;
+  const deps = {enabled: true, key: vector.synthetic_key, nowSeconds: () => vector.sent_at,
+    byteLength: s => Buffer.byteLength(s), hmac: (s,k) => crypto.createHmac('sha256',k).update(s).digest('hex'),
+    acknowledge: receipt => {reads++; assert.equal(receipt.receipt_id, vector.receipt_id);
+      return {schema_version: 'rpos.exercise.delivery.receipt.v1', status: 'confirmed', notion_confirmed: true};}};
+  const request = {schema_version: vector.schema_version, sent_at: vector.sent_at,
+    receipt_id: vector.receipt_id, record_hash: vector.record_hash, signature: vector.signature};
+  assert.equal(c.rposBridgeSignedAcknowledgement_(JSON.stringify(request), deps).status, 'confirmed');
+  assert.equal(reads, 1);
+  assert.equal(c.rposBridgeSignedAcknowledgement_(JSON.stringify({...request, signature:
+    deps.hmac('rpos.exercise.intake.v1\n'+vector.sent_at+'\n'+vector.record_hash, vector.synthetic_key)}), deps).status, 'unauthorized');
+  assert.equal(reads, 1);
+  deps.acknowledge = () => {throw Error('private token health body');};
+  const failed = JSON.stringify(c.rposBridgeSignedAcknowledgement_(JSON.stringify(request), deps));
+  assert.ok(!failed.includes('private token')); assert.ok(failed.includes('delivery_error'));
+  assert.equal(c.rposBridgeSignedAcknowledgement_(JSON.stringify(request)+' '.repeat(4096), deps).status, 'invalid_request');
+});

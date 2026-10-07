@@ -13,7 +13,7 @@ La corrección de aliases y documentación no suman otro hito por sí solas.
 | 2. Lectura física propia y contrato de origen | Verificado | UID/tiempos/segmentos reales, READ permitido/denegado/restaurado y relectura |
 | 3. Recepción firmada privada y cola de actividad | Verificado | Primer envío real en Drive privado, hash/UID únicos, reapertura y recheck aceptados |
 | 4. Integración operativa a Notion y continuidad scheduler | Verificado en operación acotada | Apps Script confirmed17:39:24, replay sin escrituras, scheduler reuse y readback independiente; 65 sesiones sin duplicados, registro/aliases/métricas conservados |
-| 5. Recuperación real ante resultado incierto y reinicio de proceso/OS | Pendiente | Recuperación física Android/backend; pruebas sintéticas no cierran el hito |
+| 5. Recuperación real ante resultado incierto y reinicio de proceso/OS | Parcial; hito pendiente | Cola confirmed física; reinicio reportado por propietario. Falta evidencia independiente tras reinicio con checkpoint pendiente y recuperación de escritura incierta real |
 | 6. Hardening Samsung y cierre operativo repetible | Pendiente | Otros errores físicos Samsung, validación operacional/release |
 
 Los cuatro hitos aceptados tienen evidencia técnica/física previa al cambio de
@@ -35,7 +35,26 @@ sin escrituras y reutilización scheduler. Readback independiente confirmó
 registro original, receipt/hash, alias screenshot/histórico y conservación de
 métricas, feedback, detalle y fecha. Intake y binding ON; entrega continua y
 migración OFF. No se acredita hash de todo el proyecto ni prueba física de
-outage. Endpoint publicado versión1 no actualizado por Guardar.
+outage. Guardar no actualiza una implementación versionada.
+
+## Confirmación física y preparación de recuperación · 06-Oct 21:31–21:47
+
+La captura suministrada a las 21:31 muestra v0.5.0-delivery y `confirmed: 1`,
+sin staged/retry/blocked. Readback independiente mantiene 65 sesiones, UID
+canónico único, los dos aliases, receipt/hash y propiedades Fitness intactos.
+La segunda imagen de las 21:36 es byte-idéntica a la anterior y no cuenta
+como evidencia nueva. El propietario respondió «si reinicié» a las 21:38:
+se registra reinicio reportado, sin screenshot independiente después de él.
+
+La continuación autorizada a las 21:47 prepara v0.6: consulta de recibo firmada
+sin Exercise JSON y checkpoint cifrado separado. La primera respuesta real
+confirmada se descarta deliberadamente antes de guardar confirmación de la
+prueba; un reinicio/recheck posterior debe leer el mismo recibo. No escribe
+Notion, no reafirma intake ni cambia flags. Ver `android-recovery.md`.
+El test controlado de reconocimiento/persistencia no equivale a una caída
+natural ni a interrumpir una escritura Notion. No cierra por sí solo BR06 ni
+el hito5 completo; BUILD permanece 66.67%. Los puntos de esfuerzo BR01–BR09
+de la matriz no son ponderaciones de progreso.
 
 ## Hitos comprobados al 05-Oct-2026
 
@@ -96,22 +115,23 @@ posterior reconciliación/cutover/entrega/recuperación real. BUILD35% conservad
 | Errores Samsung restantes | Casos de Samsung ausente/deshabilitado/no compatible tratados y validados; exportación bloqueada ante fallo | AI prepara; pruebas físicas cuando corresponda |
 | Cierre | Evidencias anteriores registradas; revisión de los criterios Bridge y porcentaje con regla acordada | AI y Raul |
 
-## Información mínima para el siguiente despliegue
+## Información ya disponible y siguiente actualización
 
 1. Proyecto y código vigente: recibidos y confirmados por Raul. No volver a
-   pedir TXT, enlace ni un número de versión de web app que aún no existe.
+   pedir TXT, enlace ni credenciales que ya están configurados.
 2. Runtime elegido: Apps Script. Receptor, coordinador de entrega JavaScript
    y wrapper de alias preparados en `apps-script/`; no ejecutan el CLI Python.
-   Android v0.5 ya prepara cola privada/firma/envío en primer plano: 24 nuevas
-   pruebas JVM locales + 67 JS + 46 Python/validadores PASS. Build/firma Samsung y publicación ya comprobados. Faltan
-   cutover/binding revisados y UAT de entrega/recuperación real.
-3. Configurar autenticación, almacenamiento privado y acceso del endpoint en
-   el entorno al revisar el despliegue concreto. Reutilizar la conexión Notion
-   aprobada; nunca enviar tokens por chat. El SDK no vuelve a pedirse.
+   Android v0.5 y Apps Script ya demostraron intake privado y entrega canónica
+   acotada con scheduler/replay. v0.6 prepara la prueba controlada separada;
+   instalación física/publicación de este nuevo código siguen pendientes.
+3. Actualizar sólo Endpoint en el proyecto existente y nueva versión de la
+   misma implementación; después actualizar la app con el certificado retenido
+   y ejecutar el bloque checkpoint/reinicio/recheck. Reutilizar configuración;
+   nunca enviar tokens por chat. El SDK no vuelve a pedirse.
 
-Antes de cambiar el porcentaje, acordar una regla de hitos ponderados o un
-criterio explícito de avance parcial. Esto corrige la medición administrativa;
-los hitos técnicos ya aceptados siguen válidos y no deben repetirse. Bridge
+El porcentaje vigente cuenta seis hitos de integración con igual peso; no
+incrementarlo por esfuerzo, documentación o preparación. Los hitos técnicos
+aceptados siguen válidos y no deben repetirse. Bridge
 PASS y el gate vertical de tres ciclos son criterios distintos; no mezclarlos.
 
 
@@ -134,7 +154,7 @@ editores externos no participan en Script Lock. Código y pruebas sintéticas
 no cierran BR01/02/03 ni recuperación real. BUILD 35% permanece vigente.
 
 
-## Acknowledgement de una entrega confirmada · preparado, no desplegado
+## Acknowledgement de una entrega confirmada · aceptado en teléfono
 
 El endpoint actualizado conserva outer staged/notion_confirmed=false y agrega
 la respuesta delivery.confirmed sólo tras intake autenticado, journal ordinary
@@ -145,7 +165,8 @@ reintentable. La ruta Notion sólo acepta GET y POST query, sin PATCH/create ni
 cambios de flags/journals de entrega. Intake mantiene su comprobación habitual
 y puede reafirmar el intent staged existente.
 
-La app v0.5 ya comprende este contrato nested; no requiere nuevo APK. Preparar
-código/pruebas no suma progreso ni actualiza el endpoint versionado. Falta
-instalación/publicación en la implementación existente y validación física de
-cola/reinicio. Tests de servicios simulados no prueban recuperación del OS.
+La app v0.5 comprende este contrato nested y su pantalla confirmed está
+aceptada a las 21:31. No se deduce un número exacto de nueva versión publicada
+ni un fingerprint completo del deployment de esa pantalla. La consulta
+dedicada v0.6 requiere nuevo Endpoint/APK; preparar código/pruebas no suma
+progreso ni actualiza Google. Tests simulados no prueban recuperación del OS.

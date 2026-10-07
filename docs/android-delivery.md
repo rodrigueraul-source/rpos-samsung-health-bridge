@@ -1,9 +1,13 @@
-# Android v0.5 delivery preparation
+# Android delivery and receipt recovery
 
 This changes the own app, not the live Apps Script project. No endpoint/key is
 embedded in source, BuildConfig, APK or links. No real export is a test fixture.
 The mock flavor cannot upload; shared synthetic unit tests validate the protocol.
-No installed phone update or actual network/outage recovery is claimed here.
+The v0.5 delivery phone has one confirmed receipt (06-Oct 21:31). Its private
+configuration and queue are already present. The owner reported a reboot at
+21:38, without independently distinct post-reboot evidence. v0.6 is a compatible
+update and prepares the explicit read-only recovery probe in `android-recovery.md`;
+no physical v0.6 installation or actual outage is claimed by source/build tests.
 
 ## Controls and private setup
 
@@ -30,11 +34,12 @@ No installed phone update or actual network/outage recovery is claimed here.
 Endpoint changes after any send attempt are blocked: transferring a pending
 UID to another backend could bypass its original durable intent. Key rotation
 for the same approved endpoint is possible privately after operator review.
-The editor project URL is NOT the deployed endpoint. Version 1 was published on 06-Oct-2026 under explicit owner approval; the
-Implementation Log retains the exact /exec URL. An external empty POST returned
-HTTP 200 with the receipt schema and `disabled`. All four activation flags
-remain OFF and the scheduler wrapper remains legacy. This closes publication
-and anonymous access only; it does not prove signed delivery or Notion writes.
+The editor project URL is NOT the deployed endpoint. Version 1 was initially
+published on 06-Oct-2026 under owner approval. Later checkpoints verified
+private signed intake, bounded canonical Notion delivery and scheduler reuse.
+Intake/binding are ON; continuous delivery/migration stay OFF. The phone's
+`confirmed: 1` is accepted; it does not prove uncertain-write recovery.
+Saving source in Google does not update the versioned web deployment.
 
 ## Persistence and receipt semantics
 
@@ -95,14 +100,13 @@ redaction, approved redirects, single HTTP attempts, byte limits and mock reject
 Existing acquisition/selection tests remain intact. Node loads the same shared
 vector into the actual `.gs` intake; Python/structural checks remain independent.
 
-Next: compare the live scheduler source; review historical v1 receipts/alias
-migration and binding; privately configure auth/receipt folder/access; deploy
-the reviewed endpoint; build/sign the Samsung v0.5 APK with the retained private
-certificate; then prove queue/restart/TLS handoff and real uncertain-write
-recovery against one existing Fitness page. Missing reviews must not create new
-sessions. Remaining Samsung error UAT, metric semantics and background-operation
-scope are separate. Synthetic preparation does not close BR04/BR05/BR06 or raise
-Registry BUILD 35%.
+Current source/build task: prepare the dedicated read-only receipt-query path
+and same-certificate v0.6 update. The owner handoff groups the existing Endpoint
+module replacement, new version of the same deployment, APK update and one
+explicit checkpoint/reboot/recheck test. Accepted READ, intake, cutover and
+alias evidence are not repeated. This controlled probe does not prove an
+interrupted Notion write or close full BR06. Remaining physical Samsung UAT
+and operational closure are separate. Registry remains BUILD 66.67%, 4/6.
 
 Official references:
 - https://developer.android.com/privacy-and-security/keystore

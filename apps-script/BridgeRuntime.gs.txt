@@ -282,7 +282,22 @@ function doPost(e) {
     const enabled = properties.getProperty('BRIDGE_INTAKE_ENABLED') === 'true';
     const key = properties.getProperty('BRIDGE_INTAKE_HMAC_KEY');
     const folderId = properties.getProperty('BRIDGE_RECEIPT_FOLDER_ID');
-    if (!enabled) {
+    const isReceiptQuery = e && e.postData &&
+      /^application\/json(?:;|$)/i.test(e.postData.type || '') &&
+      rposBridgeIsAcknowledgementRequest_(e.postData.contents);
+    if (isReceiptQuery) {
+      // A separately signed receipt query NEVER invokes intake or a delivery worker,
+      // even when continuous delivery is enabled by another operator.
+      result = rposBridgeSignedAcknowledgement_(e.postData.contents, {
+        enabled: enabled, key: folderId ? key : null,
+        nowSeconds: function() { return Math.floor(Date.now() / 1000); },
+        byteLength: function(text) { return Utilities.newBlob(text).getBytes().length; },
+        hmac: function(text, secret) {
+          return rposBridgeHex_(Utilities.computeHmacSha256Signature(text, secret, Utilities.Charset.UTF_8));
+        },
+        acknowledge: function(receipt) { return rposBridgeAcknowledgeReceipt_(receipt, properties); }
+      });
+    } else if (!enabled) {
       result = rposBridgeResult_('disabled');
     } else if (!folderId || !key) {
       result = rposBridgeResult_('not_configured');
@@ -332,7 +347,55 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// Called only after authenticated intake. Never writes a journal or remote page.
+function rposBridgeIsAcknowledgementRequest_(raw) {
+  if (typeof raw !== 'string' || raw.length > 262144) return false;
+  try { return JSON.parse(raw).schema_version === 'rpos.exercise.acknowledgement.v1'; }
+  catch (ignore) { return false; }
+}
+
+// Query identities only. Its signature is domain-separated from Exercise intake.
+// No payload, staging, flag changes or mutation-capable dependency is accepted.
+function rposBridgeSignedAcknowledgement_(raw, deps) {
+  function response(status, request) {
+    return {schema_version: 'rpos.exercise.acknowledgement.receipt.v1', status: status,
+      notion_confirmed: status === 'confirmed',
+      receipt_id: request ? request.receipt_id : null,
+      record_hash: request ? request.record_hash : null};
+  }
+  try {
+    if (!deps.enabled) return response('disabled');
+    if (typeof deps.key !== 'string' || !/^[a-f0-9]{64}$/.test(deps.key)) return response('not_configured');
+    if (typeof raw !== 'string' || deps.byteLength(raw) > 4096) return response('invalid_request');
+    const request = JSON.parse(raw);
+    if (!request || Array.isArray(request) ||
+        Object.keys(request).sort().join(',') !== 'receipt_id,record_hash,schema_version,sent_at,signature' ||
+        request.schema_version !== 'rpos.exercise.acknowledgement.v1' ||
+        !Number.isSafeInteger(request.sent_at) || request.sent_at < 0 ||
+        typeof request.receipt_id !== 'string' || typeof request.record_hash !== 'string' ||
+        typeof request.signature !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(request.receipt_id) ||
+        !/^[a-f0-9]{64}$/.test(request.record_hash) ||
+        !/^[a-f0-9]{64}$/.test(request.signature)) return response('invalid_request');
+    if (Math.abs(deps.nowSeconds() - request.sent_at) > 300) return response('unauthorized');
+    const signed = 'rpos.exercise.acknowledgement.v1\n' + request.sent_at + '\n' +
+      request.receipt_id + '\n' + request.record_hash;
+    if (!rposBridgeEqual_(request.signature, deps.hmac(signed, deps.key))) return response('unauthorized');
+    const acknowledgement = deps.acknowledge({status: 'staged', receipt_id: request.receipt_id,
+      record_hash: request.record_hash});
+    if (!acknowledgement) return response('unresolved', request);
+    const allowed = ['confirmed', 'busy', 'storage_unresolved', 'delivery_conflict',
+      'needs_migration', 'unresolved', 'not_configured', 'delivery_error'];
+    if (acknowledgement.schema_version !== 'rpos.exercise.delivery.receipt.v1' ||
+        allowed.indexOf(acknowledgement.status) < 0 ||
+        acknowledgement.notion_confirmed !== (acknowledgement.status === 'confirmed')) {
+      return response('delivery_error', request);
+    }
+    return response(acknowledgement.status, request);
+  } catch (ignore) { return response('delivery_error'); }
+}
+
+// Called only after authenticated intake or signed receipt query.
+// Never writes a journal or remote page.
 function rposBridgeAcknowledgement_(receipt, deps) {
   let locked = false;
   function response(status) {

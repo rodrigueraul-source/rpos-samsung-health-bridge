@@ -61,6 +61,16 @@ class BridgeQueue(private val persistence: QueuePersistence, private val transpo
 
     @Synchronized fun hasAttempts(): Boolean = entries().any { it.attempts > 0 }
 
+    // An explicit recovery probe reads the sole confirmed receipt; never resets it.
+    @Synchronized fun recoveryRecord(receiptId: String? = null): QueueEntry {
+        val current = entries()
+        val matches = if (receiptId == null) current else current.filter { it.receiptId == receiptId }
+        if (matches.size != 1 || matches.single().state != "confirmed" || matches.single().recordHash == null) {
+            throw BridgeFailure("recovery_requires_one_confirmed")
+        }
+        return matches.single()
+    }
+
     @Synchronized fun recheckReviewedBlocked() {
         // Explicit user action after backend review. Never clears any backend write intent.
         save(entries().map { if (it.state == "blocked") it.update("retry", "reviewed_recheck", nextAt = 0) else it })

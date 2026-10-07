@@ -1,0 +1,32 @@
+{
+  "artifact": "RPOS-Samsung-Health-Bridge-Delivery-v0.6.0.apk",
+  "apk_bytes": 3901210,
+  "apk_sha256": "54ddc5e5603fe9f5a807f992f3cdb2e232ddd7bd5da3f70746ed8bb4d46360eb",
+  "package": "com.rpos.bridge.delivery",
+  "version_code": 6,
+  "version_name": "0.6.0-delivery",
+  "certificate_sha256": "765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3",
+  "matches_previous_certificate": true,
+  "android_unit_tests": {
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "apps_script_tests": 169,
+  "python_tests": 46,
+  "sdk_aar_sha256": "f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654",
+  "runtime_bytes": 77920,
+  "runtime_sha256": "8a63887975ba8cf83657ec9a5a19df3405ea31069230f4b5446a762c33793ede",
+  "physical_v06_recovery": "pending",
+  "progress": 66.67,
+  "verified_milestones": "4/6",
+  "continuous_delivery": "off",
+  "migration": "off",
+  "single_module_replacement_matches_bundle": true,
+  "other_six_modules_unchanged": true,
+  "apk_signature_v3": true,
+  "zip_alignment_16k": true,
+  "no_embedded_credentials": true,
+  "local_ci_only": true
+}

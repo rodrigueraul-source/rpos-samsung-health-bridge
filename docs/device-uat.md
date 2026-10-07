@@ -1,8 +1,11 @@
 # Samsung Health Bridge — Device UAT gate
 
-This is the first point where Raul must intervene physically.
+Initial READ/consent, private intake, bounded canonical delivery and phone
+confirmation are already accepted. Historical batches below are procedures,
+not repeat requests. The current grouped v0.6 recovery handoff is described
+in `android-recovery.md`; keep the existing installation/configuration/data.
 
-## Preconditions
+## Original READ preconditions (historical)
 
 1. Use a physical Android 10+ phone with Samsung Health 6.30.2+ installed and initialized; emulators are unsupported.
 2. For a source build, place the verified official SDK 1.1.0 AAR in `app/libs/`; the supplied APK already includes the SDK.
@@ -88,7 +91,7 @@ process termination. Delivery-worker fault-injection tests use synthetic data;
 authenticated unattended transport and real cross-system timeout/crash tests
 remain open.
 
-## v0.5 separate-package handoff · 06-Oct-2026
+## v0.5 separate-package handoff · historical 06-Oct-2026
 
 The old APK certificate was recovered from the retained v0.4 APK, but its
 private key was not found. Preparing `com.rpos.bridge.delivery` avoids replacing

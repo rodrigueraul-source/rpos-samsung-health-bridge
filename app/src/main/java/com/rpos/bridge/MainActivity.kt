@@ -44,6 +44,7 @@ class MainActivity : Activity() {
     private lateinit var sendButton: Button
     private lateinit var pendingButton: Button
     private lateinit var configureButton: Button
+    private lateinit var recoveryButton: Button
     private lateinit var deliveryStatus: TextView
     private var deliveryBusy = false
     private var selection: ExerciseSelection? = null
@@ -92,17 +93,36 @@ class MainActivity : Activity() {
         pendingButton = Button(this).apply {
             text = "CHECK PENDING RECEIPTS"
             setOnClickListener { deliveryTask { runtime ->
-                val config = runtime.config() ?: throw BridgeFailure("not_configured")
-                runtime.queue.sendDue(config, max = 1)
+                runtime.checkPending()
             } }
             setOnLongClickListener {
                 AlertDialog.Builder(this@MainActivity).setTitle("Backend review completed?")
                     .setMessage("Only recheck blocked receipts after reviewing the backend issue. This does not clear backend write intents or replace the original export.")
                     .setNegativeButton("Cancel", null)
                     .setPositiveButton("Reviewed: recheck") { _, _ ->
-                        deliveryTask { runtime -> runtime.queue.recheckReviewedBlocked(); runtime.queue.summary() }
+                        deliveryTask { runtime ->
+                            runtime.recovery.recheckReviewedBlocked()
+                            runtime.queue.recheckReviewedBlocked()
+                            runtime.summary()
+                        }
                     }.show()
                 true
+            }
+        }
+
+        recoveryButton = Button(this).apply {
+            text = "TEST RECEIPT RECOVERY"
+            visibility = if (ExerciseReaderProvider.SOURCE == "samsung_health") View.VISIBLE else View.GONE
+            setOnClickListener {
+                AlertDialog.Builder(this@MainActivity).setTitle("Test receipt recovery?")
+                    .setMessage("Checks the one confirmed receipt without uploading a workout. Deliberately discards its first confirmation before saving the test result. Then restart the phone and use CHECK PENDING RECEIPTS. Your normal receipt stays confirmed.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Start recovery test") { _, _ ->
+                        deliveryTask { runtime ->
+                            val config = runtime.config() ?: throw BridgeFailure("not_configured")
+                            runtime.recovery.begin(config)
+                        }
+                    }.show()
             }
         }
 
@@ -118,10 +138,11 @@ class MainActivity : Activity() {
             addView(configureButton)
             addView(sendButton)
             addView(pendingButton)
+            addView(recoveryButton)
         }
 
         setContentView(ScrollView(this).apply { addView(layout) })
-        deliveryTask { it.queue.summary() }
+        deliveryTask { it.summary() }
     }
 
     private fun readExercise() {
@@ -201,6 +222,7 @@ class MainActivity : Activity() {
         updateSendEnabled()
         pendingButton.isEnabled = false
         configureButton.isEnabled = false
+        recoveryButton.isEnabled = false
         deliveryStatus.text = "Checking private receipt state..."
         readScope.launch {
             try {
@@ -213,6 +235,7 @@ class MainActivity : Activity() {
                 deliveryBusy = false
                 pendingButton.isEnabled = true
                 configureButton.isEnabled = true
+                recoveryButton.isEnabled = true
                 updateSendEnabled()
             }
         }
@@ -221,6 +244,7 @@ class MainActivity : Activity() {
     private fun sendSelected() {
         val json = selectedRecordJson ?: return
         deliveryTask { runtime ->
+            if (runtime.recovery.active()) throw BridgeFailure("recovery_pending")
             runtime.queue.enqueue(json)
             val config = runtime.config() ?: throw BridgeFailure("not_configured")
             runtime.queue.sendDue(config, max = 1)
