@@ -6,8 +6,22 @@ private signed intake, bounded canonical delivery, scheduler reuse and the
 v0.5 phone's confirmed receipt. Intake/binding are ON; continuous delivery and
 migration remain OFF. A public negative-authentication check now observes the
 dedicated read-only query contract; this does not prove authenticated phone
-recovery or the exact deployed source hash. The v0.6 recovery checkpoint remains
-pending. Saving editor changes alone does not update a versioned endpoint.
+recovery or the exact deployed source hash. The latest owner screenshots show
+v0.6 discarded-response recovery reaching confirmed; OS restart evidence and
+the remaining operational acceptance cases still need verification. Saving
+editor changes alone does not update a versioned endpoint.
+
+## Finalize a new canonical session without per-UID script rewrites
+
+The optional owner-run `BridgeCanonicalDelivery.gs` finalizes one signed staged
+receipt against an existing unique canonical session with the same complete
+owner-supplied SDK record. It uses the accepted runtime without replacing it or
+republishing the endpoint; global continuous delivery/migration remain OFF.
+It discards the acknowledgement after one actual remote write, then verifies
+read-only recovery and replay. Date, Notes, metrics and feedback stay unchanged.
+See [canonical delivery](../docs/canonical-delivery.md) for the single owner
+operation, expected output and limits. The new operator is deliberately excluded
+from the seven-module deployed runtime and never called by `doPost` or a trigger.
 
 ## Read-only review for a pending recovery retry
 
