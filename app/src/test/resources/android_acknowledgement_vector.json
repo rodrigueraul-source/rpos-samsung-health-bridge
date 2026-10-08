@@ -1,0 +1,9 @@
+{
+  "schema_version": "rpos.exercise.acknowledgement.v1",
+  "synthetic_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sent_at": 1800000000,
+  "receipt_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "record_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "signed_text": "rpos.exercise.acknowledgement.v1\n1800000000\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\ncccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "signature": "d7584769cd997ea83bf0a8653dee71b569e3aaa66c1571b4033a7d9d5dee2764"
+}

@@ -1,0 +1,55 @@
+/* Owner-selected operator, installed separately from the versioned HTTP runtime.
+ * Run ONLY after specific approval to enable authenticated private staging.
+ * No Notion writes, scheduler changes, triggers, sharing or secret output.
+ */
+function rposBridgeEnableIntakePilot() {
+  const result = {schema_version: 'rpos.bridge.intake.pilot.v1',
+    status: 'review_required', notion_delivery_enabled: false,
+    full_bridge_enabled: false};
+  let locked = false;
+  let lock;
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const flags = ['BRIDGE_INTAKE_ENABLED', 'BRIDGE_DELIVERY_ENABLED',
+      'BRIDGE_MIGRATION_ENABLED', 'BRIDGE_SCHEDULER_BINDING_REVIEWED'];
+    function off() { return flags.every(function(k) { return props.getProperty(k) === 'false'; }); }
+    function inventory() {
+      const keys = props.getKeys().filter(function(k) { return /^RPOS_BRIDGE_(INTENT|DELIVERY|MIGRATION|SCHEDULER)_/.test(k); }).sort();
+      if (keys.length > 100) throw new Error('bounded_inventory');
+      const configuration = ['BRIDGE_INTAKE_HMAC_KEY', 'BRIDGE_RECEIPT_FOLDER_ID',
+        'BRIDGE_FITNESS_DATA_SOURCE_ID', 'NOTION_TOKEN'].map(function(k) { return props.getProperty(k); });
+      return JSON.stringify([configuration, keys.map(function(k) { return [k, props.getProperty(k)]; })]);
+    }
+    if (!off() || rposBridgeBindingPath_(createGymCapturePage_) !== 'legacy') {
+      result.status = 'flags_or_binding_require_review';
+    } else {
+      const before = inventory();
+      const preflight = rposBridgePreflight();
+      if (preflight.status !== 'local_checks_pass_activation_not_approved') {
+        result.status = 'configuration_requires_review';
+      } else {
+        const audit = rposBridgeReadinessAudit();
+        if (audit.status !== 'live_reads_pass_activation_not_approved' || audit.scheduler_binding !== 'legacy') {
+          result.status = 'live_audit_requires_review';
+        } else {
+          lock = LockService.getScriptLock();
+          locked = lock.tryLock(1000);
+          if (!locked) result.status = 'busy';
+          else if (!off() || inventory() !== before || rposBridgeBindingPath_(createGymCapturePage_) !== 'legacy') {
+            result.status = 'concurrent_change_requires_review';
+          } else {
+            // Properties are shared with the existing /exec deployment. Never set
+            // delivery/migration/binding here; the scheduler continues legacy.
+            props.setProperty('BRIDGE_INTAKE_ENABLED', 'true');
+            result.status = props.getProperty('BRIDGE_INTAKE_ENABLED') === 'true' &&
+              flags.slice(1).every(function(k) { return props.getProperty(k) === 'false'; }) ?
+              'authenticated_staging_enabled' : 'activation_readback_requires_review';
+          }
+        }
+      }
+    }
+  } catch (ignore) { result.status = 'operator_error_requires_review'; }
+  finally { if (locked) { try { lock.releaseLock(); } catch (ignore) {} } }
+  Logger.log(JSON.stringify(result));
+  return result;
+}
