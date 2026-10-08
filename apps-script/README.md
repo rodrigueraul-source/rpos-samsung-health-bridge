@@ -15,8 +15,11 @@ editor changes alone does not update a versioned endpoint.
 
 The optional owner-run `BridgeCanonicalDelivery.gs` finalizes one signed staged
 receipt against an existing unique canonical session with the same complete
-owner-supplied SDK record. It uses the accepted runtime without replacing it or
-republishing the endpoint; global continuous delivery/migration remain OFF.
+owner-supplied SDK record. Its reviewed delivery coordinator and HTTP/journal
+adapters are packaged in this same file, so absent optional global review or
+delivery workers cannot block it. It uses the accepted intake/Notion runtime
+without replacing it or republishing the endpoint; global continuous delivery
+and migration remain OFF.
 It discards the acknowledgement after one actual remote write, then verifies
 read-only recovery and replay. Date, Notes, metrics and feedback stay unchanged.
 See [canonical delivery](../docs/canonical-delivery.md) for the single owner

@@ -3,21 +3,26 @@
 A new signed receipt used to need a separate hardcoded target/review script.
 `rposBridgeFinalizeCanonicalReceipt` replaces that per-session setup for an
 existing canonical Samsung session whose complete SDK record has already been
-supplied and reviewed. It uses the existing intake store, delivery coordinator,
-Notion port and durable property journal. Its native HTTP/journal adapters are
-self-contained, so optional legacy adapters cannot block this operation. Core
-runtime functions are checked before private configuration or remote calls.
+supplied and reviewed. It uses the existing intake store and Notion port, with
+its delivery coordinator, HTTP and durable journal adapters packaged in the
+same operator file. The coordinator is an unchanged lexically scoped copy of
+the reviewed `BridgeDelivery.gs` core, checked for source equivalence in CI.
+It works when optional global `rposBridgeReview_`, `rposBridgeDeliver_` and their
+delivery-module helpers are absent. Remaining transitive runtime helpers are
+checked before private configuration or remote calls. The report identifies
+this revision as `operator_version: 2026-10-08.2`.
 It does not publish a web deployment or enable continuous delivery.
 
 ## One owner operation
 
-1. In the installed delivery app, queue the selected real SDK session and use
-   **SYNC ONE**. Its intake receipt must be staged in the private Drive folder.
-   The already confirmed previous receipt remains confirmed.
+1. A signed intake receipt must already be staged in the private Drive folder.
+   If it is present, do not upload it again. For a genuinely new session only,
+   queue the selected real SDK session and use **SYNC ONE** in the installed
+   delivery app. The already confirmed previous receipt remains confirmed.
 2. If pending-queue survival across an OS restart still lacks evidence, restart
    with this new item pending; reopen and capture its state before CHECK.
-3. In the existing Apps Script project, add one separate script file named
-   **BridgeCanonicalDelivery**. Paste the complete
+3. In the existing Apps Script project, replace the entire existing
+   **BridgeCanonicalDelivery** file; create it only if it is absent. Paste the complete
    [BridgeCanonicalDelivery.gs](../apps-script/BridgeCanonicalDelivery.gs), save
    and run **rposBridgeFinalizeCanonicalReceipt** once. Leave the existing
    runtime, endpoint deployment, Script Properties and triggers as configured.
@@ -26,6 +31,7 @@ It does not publish a web deployment or enable continuous delivery.
    another receipt's confirmation does not prove delivery of this UID.
 
 Expected first-run output: `status: confirmed`, `notion_confirmed: true`,
+`operator_version: 2026-10-08.2`,
 `response_loss_recovered: true`, `replay_without_remote_writes: true`,
 `remote_write_calls: 1`, `activation_flags_unchanged: true`,
 `continuous_delivery_enabled: false`, `migration_enabled: false`.
@@ -67,3 +73,11 @@ selection/upload and reviewed destination reconciliation remain required for
 other new UIDs; unattended acquisition and continuous delivery are separate
 operational work. The timer refresh remains backlog. Synthetic tests and code
 publication do not close device acceptance milestones.
+
+The 08-Oct owner execution at 10:31 returned `runtime_incomplete` with only
+`review` and `deliver` false; it stopped before Script Properties or writes.
+This revision fixes that specific packaging gap without adding global worker
+stubs, replacing the accepted seven-module runtime, installing triggers,
+rebuilding Android or republishing the endpoint. The synthetic regression runs
+with the entire optional delivery module absent, and retains SDK precision,
+overlapping segments, parent nulls and a separate unrelated staged receipt.

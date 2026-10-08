@@ -12,14 +12,23 @@ const OWNER_BLOCK = '33333333-3333-3333-3333-333333333333';
 const MANAGED_BLOCK = '44444444-4444-4444-4444-444444444444';
 const rich = s => [{type: 'text', text: {content: s}}];
 
-function fixture() {
+function fixture({withoutDeliveryModule = true} = {}) {
   const c = vm.createContext({Date, JSON, Number, encodeURIComponent});
-  for (const file of ['BridgeIntake.gs', 'BridgeDelivery.gs', 'BridgeNotion.gs', 'BridgeCanonicalDelivery.gs']) {
+  for (const file of ['BridgeIntake.gs', 'BridgeEndpoint.gs',
+    withoutDeliveryModule ? 'BridgeRuntimeHelpers.gs.txt' : 'BridgeDelivery.gs',
+    'BridgeNotion.gs', 'BridgeCanonicalDelivery.gs']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script', file), 'utf8'), c);
   }
   const record = {uid: 'synthetic-canonical-001', start_time: '2026-01-03T12:00:00.123Z',
     end_time: '2026-01-03T13:00:00.456Z', exercise_type: 'OTHER', custom_title: 'Synthetic record',
-    calories_kcal: null, distance_meters: null, duration_seconds: null, sessions: []};
+    calories_kcal: null, distance_meters: null, duration_seconds: null, zone_offset: '-06:00', sessions: [
+      {start_time: '2026-01-03T12:10:00.123Z', end_time: '2026-01-03T12:20:00.456Z',
+        exercise_type: 'TREADMILL', duration_millis: 599789, calories_kcal: 12.3456789012345,
+        distance_meters: 456.7890123456789, mean_heart_rate_bpm: 96, custom_title: null},
+      {start_time: '2026-01-03T12:19:59.888Z', end_time: '2026-01-03T12:20:30.742Z',
+        exercise_type: 'BREAK', duration_millis: 30000, calories_kcal: 1.23456789012345,
+        distance_meters: null, mean_heart_rate_bpm: null, custom_title: null}
+    ]};
   const exported = {schema_version: 'rpos.exercise.export.v1', sdk_version: '1.1.0', source: 'samsung_health',
     read_at: '2026-01-03T14:00:00Z', read_record_count: 1, record};
   const stored = {schema_version: 'rpos.exercise.intake.stored.v1', state: 'staged',
@@ -40,6 +49,8 @@ function fixture() {
     state.requests.push({method, url});
     if (method === 'GET' && url === '/data_sources/' + DS) return {id: DS, properties: page().properties};
     if (method === 'POST' && url === '/data_sources/' + DS + '/query') {
+      if (body.filter.and && (body.filter.and[0].rich_text.equals !== state.source ||
+          body.filter.and[1].rich_text.equals !== state.uid)) return list([]);
       return list(Array.from({length: state.pageCount}, () => page()));
     }
     if (method === 'GET' && url === '/pages/' + PAGE) return page();
@@ -82,7 +93,10 @@ function fixture() {
     ['NOTION_TOKEN', 'synthetic-notion-token'], ['RPOS_BRIDGE_INTENT_' + stored.receipt_id, 'synthetic-intent']
   ]);
   const props = {getProperty: key => properties.get(key) ?? null,
-    getKeys: () => [...properties.keys()], setProperty: (key, value) => properties.set(key, value)};
+    getKeys: () => [...properties.keys()], setProperty: (key, value) => {
+      if (state.onJournalSave) state.onJournalSave(key, value);
+      properties.set(key, value);
+    }};
   Object.assign(c, {PropertiesService: {getScriptProperties: () => props},
     LockService: {getScriptLock: () => deps.lock}, RPOS: {fitnessDataSourceId: DS},
     Logger: {log: value => state.logs.push(value)}, rposBridgeSha_: sha,
@@ -102,6 +116,9 @@ test('canonical full-export review recovers lost write response with exactly one
   assert.equal(f.state.patches.length, 2);
   assert.equal(f.state.blocks.length, 2);
   assert.deepEqual(f.state.blocks[0], original);
+  const evidence = JSON.parse(f.c.rposBridgePlain_(f.state.blocks[1].code.rich_text)
+    .slice('rpos.notion.evidence.v2\n'.length));
+  assert.deepEqual(evidence.record, f.stored.export.record);
   assert.equal(f.state.journal.get(f.stored.receipt_id).state, 'confirmed');
   assert.deepEqual(Object.keys(f.state.patches[0].body.properties).sort(), ['Source', 'Source Record ID']);
   assert.equal(f.run().status, 'no_matching_signed_receipt');
@@ -187,18 +204,106 @@ test('owner entry blocks unexpected flags and stops a mid-write flag change befo
   assert.equal(JSON.parse(f.properties.get('RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id)).state, 'attempting');
 });
 
-test('owner operation works without legacy adapters and reports a missing worker before services or writes', () => {
+test('observed partial runtime works without global delivery functions, result/save helpers or adapters', () => {
   const f = fixture();
-  f.c.rposBridgePropertyJournal_ = undefined;
-  f.c.rposBridgeNotionHttp_ = undefined;
+  for (const name of ['rposBridgeReview_', 'rposBridgeDeliver_', 'rposBridgeDeliveryResult_',
+    'rposBridgeDeliverySave_', 'rposBridgePropertyJournal_', 'rposBridgeNotionHttp_', 'rposBridgeDeliverReceipt']) {
+    assert.equal(typeof f.c[name], 'undefined', name);
+  }
+  const result = f.runNative();
+  assert.equal(result.status, 'confirmed');
+  assert.equal(result.operator_version, '2026-10-08.2');
+  assert.equal(Object.values(result.runtime_present).every(Boolean), true);
+  assert.equal(result.response_loss_recovered, true);
+  assert.equal(result.replay_without_remote_writes, true);
+  assert.equal(result.remote_write_calls, 1);
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('remaining transitive dependencies fail before private service access or writes', () => {
+  for (const [name, probe] of [['rposBridgeNotionPort_', 'notion'], ['rposBridgeText_', 'text'],
+    ['rposBridgeTime_', 'time'], ['rposBridgeMetric_', 'metric'], ['rposBridgeRichText_', 'rich_text'],
+    ['rposBridgeWritableText_', 'writable_text'], ['rposBridgeAlias_', 'alias'], ['rposBridgeHex_', 'hex']]) {
+    const f = fixture();
+    f.c[name] = undefined;
+    f.c.PropertiesService = {getScriptProperties: () => {throw new Error('Unexpected service access');}};
+    const result = f.runNative();
+    assert.equal(result.status, 'runtime_incomplete', name);
+    assert.equal(result.runtime_present[probe], false, name);
+    assert.equal(f.state.requests.length, 0);
+  }
+});
+
+test('full runtime conflicts do not replace the lexically packaged delivery core', () => {
+  const f = fixture({withoutDeliveryModule: false});
+  for (const name of ['rposBridgeReview_', 'rposBridgeDeliver_', 'rposBridgeDeliveryResult_',
+    'rposBridgeDeliverySave_', 'rposBridgePropertyJournal_', 'rposBridgeNotionHttp_']) {
+    f.c[name] = () => {throw new Error('Optional global must never run: ' + name);};
+  }
   assert.equal(f.runNative().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+});
+
+test('packaged core matches accepted shared code and loads with full bundle without duplicate globals or services', () => {
+  const read = name => fs.readFileSync(path.join(__dirname, '../apps-script', name), 'utf8');
+  const source = read('BridgeDelivery.gs');
+  const shared = source.slice(source.indexOf('function rposBridgeDeliveryResult_('),
+    source.indexOf('function rposBridgePropertyJournal_(')).trim();
+  const embedded = read('BridgeCanonicalDelivery.gs').split('  // BEGIN embedded BridgeDelivery core\n')[1]
+    .split('  // END embedded BridgeDelivery core')[0].split('\n')
+    .map(line => line.startsWith('  ') ? line.slice(2) : line).join('\n').trim();
+  assert.equal(embedded, shared);
+  const combined = read('BridgeRuntime.gs.txt') + '\n' + read('BridgeCanonicalDelivery.gs');
+  const names = [...combined.matchAll(/^function\s+(\w+)\s*\(/gm)].map(match => match[1]);
+  assert.equal(new Set(names).size, names.length);
+  const c = vm.createContext({});
+  vm.runInContext(combined, c, {timeout: 1000});
+  assert.equal(typeof c.rposBridgeFinalizeCanonicalReceipt, 'function');
+  assert.equal(typeof c.rposBridgeDeliver_, 'function');
+});
+
+test('fresh partial runtime recovers attempting intent after a lost confirmed-journal save without rewriting', () => {
+  const f = fixture();
+  f.state.onJournalSave = (key, value) => {
+    if (key.startsWith('RPOS_BRIDGE_DELIVERY_') && JSON.parse(value).state === 'confirmed') {
+      throw new Error('Synthetic process failure before confirmed journal save');
+    }
+  };
+  assert.equal(f.runNative().status, 'delivery_error');
+  assert.equal(f.state.patches.length, 2);
+  assert.equal(JSON.parse(f.properties.get('RPOS_BRIDGE_DELIVERY_' + f.stored.receipt_id)).state, 'attempting');
   const g = fixture();
-  g.c.rposBridgeDeliver_ = undefined;
-  g.c.PropertiesService = {getScriptProperties: () => {throw new Error('Unexpected service access');}};
+  for (const [key, value] of f.properties) g.properties.set(key, value);
+  g.state.blocks = clone(f.state.blocks);
+  g.state.edited = f.state.edited;
   const result = g.runNative();
-  assert.equal(result.status, 'runtime_incomplete');
-  assert.equal(result.runtime_present.deliver, false);
-  assert.equal(g.state.requests.length, 0);
+  assert.equal(result.status, 'confirmed');
+  assert.equal(result.remote_write_calls, 0);
+  assert.equal(result.replay_without_remote_writes, true);
+  assert.equal(g.state.patches.length, 0);
+  assert.equal(JSON.parse(g.properties.get('RPOS_BRIDGE_DELIVERY_' + g.stored.receipt_id)).state, 'confirmed');
+});
+
+test('unrelated staged walk stays separate while only the exact matching receipt is finalized', () => {
+  const f = fixture(), walk = clone(f.stored);
+  walk.export.record.uid = 'synthetic-separate-walk';
+  walk.export.record.source_app_id = 'com.google.android.apps.fitness';
+  walk.export.record.exercise_type = 'WALKING';
+  walk.receipt_id = sha(JSON.stringify(['samsung_health', walk.export.record.uid]));
+  walk.record_hash = sha(JSON.stringify(f.c.rposBridgeCanonical_(walk.export.record)));
+  const found = new Map([[f.stored.receipt_id, {id: 'synthetic-file', value: f.stored}],
+    [walk.receipt_id, {id: 'synthetic-walk-file', value: walk}]]);
+  f.deps.store.find = id => [clone(found.get(id))];
+  f.deps.store.getIntent = id => ({state: 'staged', receipt_id: id,
+    file_id: found.get(id).id, record_hash: found.get(id).value.record_hash});
+  f.properties.set('RPOS_BRIDGE_INTENT_' + walk.receipt_id, 'synthetic-walk-intent');
+  const before = clone(walk);
+  assert.equal(f.runNative().status, 'confirmed');
+  assert.equal(f.state.patches.length, 2);
+  assert.equal(f.properties.has('RPOS_BRIDGE_DELIVERY_' + walk.receipt_id), false);
+  assert.deepEqual(walk, before);
+  assert.equal(f.runNative().status, 'no_matching_signed_receipt');
+  assert.equal(f.state.patches.length, 2);
 });
 
 test('standalone transport rejects foreign paths, redirects, non-objects and HTTP failures', () => {
