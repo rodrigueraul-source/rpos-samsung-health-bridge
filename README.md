@@ -4,18 +4,37 @@ Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness*
 
 ## Estado actual
 
-**UNPARKED · BUILD · 66.67% · 4/6 hitos verificados**
+**BUILD · 83.33% · 5/6 hitos verificados · hito 6 PAUSADO por decisión del propietario (08-Oct-2026, 23:21 CDMX).**
 
-Entrega canónica acotada y continuidad scheduler confirmadas el 06-Oct-2026:
-registro SDK/aliases/métricas conservados, replay sin escrituras y cero
-sesiones duplicadas. Intake y binding ON; entrega continua/migración OFF.
-La captura del teléfono del 06-Oct 21:31 muestra `confirmed: 1` en v0.5.0-delivery.
-El propietario reportó reinicio a las 21:38; la imagen repetida era idéntica,
-por lo que no acredita una lectura independiente después del reinicio.
-La recuperación v0.6 prepara una consulta firmada del recibo existente y un
-checkpoint separado para una prueba física controlada. Recuperación real
-ante escritura incierta y cierre Samsung siguen pendientes; ver
-`docs/progress-evidence.md`. No es Bridge PASS ni una estimación de esfuerzo.
+**Fuente de control:** R-POS Program Registry e Implementation Log en Notion;
+detalle de trazabilidad en [docs/progress-evidence.md](docs/progress-evidence.md).
+Este porcentaje corresponde a cinco hitos aceptados de seis, no a horas o
+puntos de esfuerzo; **no es Bridge PASS**.
+
+- **Hito 5 aceptado el 08-Oct:** entrega Core con respuesta perdida recuperada
+  y replay sin nuevas escrituras remotas; reinicio del teléfono reportado por
+  el propietario y corroboración posterior mediante READ/CHECK, registro
+  canónico único, UID/alias/métricas conservados. No se reclama telemetría
+  de boot ni recuperación ante cualquier fallo arbitrario.
+- **v0.7, operación acotada confirmada el 08-Oct:** natación reconciliada en
+  destino existente, acuse Android `confirmed: 4 · staged: 1`, sin duplicados.
+  La captura del 11-Oct muestra `READ PASS · 75 records` y estado local
+  `confirmed: 4 · staged: 3 · recovery: confirmed`: prueba lectura actual,
+  **no** confirmación remota de las tres entradas staged.
+- **Hito 6 diferido:** otros errores físicos Samsung y checklist de release
+  repetible. No pedir pruebas adicionales, reinstalaciones, finalizadores
+  ni CHECK para cerrar este gate salvo regresión crítica o nueva instrucción.
+- **Configuración conservada según último readback operativo del 08-Oct:**
+  intake/binding ON; entrega continua/migración OFF. Adquisición automática,
+  conciliación automática y SA-RPOS-VERTICAL-001 permanecen fuera del PASS.
+- **Foco de desarrollo:** Coach Digital. No reactivar Bridge por esta corrección
+  documental; no alterar código, credenciales ni flags.
+
+### Contexto histórico · 06-Oct
+
+Los checkpoints anteriores validaron entrega canónica acotada, scheduler,
+replay sin duplicados y versión v0.5. La preparación de recuperación v0.6
+se describe en los documentos técnicos como antecedente, no como estado actual.
 
 La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Android faltante sin reemplazar el MVP Python ya validado.
 
@@ -39,17 +58,19 @@ La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Andr
 
 La actualización v0.6 pasó 41 pruebas Android y 169 Apps Script locales;
 APK release firmado y certificado anterior comparados. Build y hashes:
-`docs/android-delivery-build-evidence.md`. La prueba física sigue pendiente.
+`docs/android-delivery-build-evidence.md`. La prueba física de v0.6 estaba pendiente en ese checkpoint histórico; la evidencia operativa posterior corresponde a v0.7.
 
 ### Gate pendiente
 
 La lectura inicial, el mapeo asistido de UID y el replay controlado ya tienen
 evidencia privada. Dos UID reales y la denegación/restauración de permisos ya
 tienen checkpoints aceptados. El runtime, entrega acotada y alias del scheduler
-ya están verificados. Quedan recuperación real ante resultado incierto,
-otros errores físicos Samsung y cierre operacional repetible.
+ya están verificados. La recuperación real exigida para el hito 5 fue
+aceptada el 08-Oct con evidencia productiva y confirmación física posterior.
+Quedan otros errores físicos Samsung y el cierre operacional repetible del
+hito 6, actualmente PAUSADO por prioridad.
 Entrega automática continua sigue fuera de la activación autorizada. La WBS
-no define pesos; el conteo actual usa seis hitos explícitos. Ver
+no define pesos; el conteo vigente de 5/6 usa seis hitos explícitos. Ver
 `docs/progress-evidence.md`. Bridge no alcanza PASS hasta demostrar el flujo completo:
 
 `Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`
