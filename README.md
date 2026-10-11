@@ -39,7 +39,30 @@ python -m unittest discover -s tests
 
 ## Estado
 
-**UNPARKED · BUILD · 35%** — desarrollo reactivado. La base de normalización ya existe, pero siguen pendientes la prueba Android limpia, lectura real desde Samsung Health, preservación del UID de origen, mapeo a R-POS y validación de deduplicación/reintentos. No se considera PASS.
+**BUILD · 83.33% · 5 de 6 hitos verificados · hito 6 PAUSADO** (corte documental 11-Oct-2026).
+
+La rama `main` conserva el MVP inicial Python; **no representa el código Android
+operativo vigente**. La adquisición y la entrega asistida se desarrollan en
+[`bridge/android-acquisition-v0.2`](../../tree/bridge/android-acquisition-v0.2),
+con evidencia resumida en
+[`docs/progress-evidence.md`](../../blob/bridge/android-acquisition-v0.2/docs/progress-evidence.md).
+
+El 08-Oct, Notion (R-POS Program Registry + Implementation Log) aceptó el
+**hito 5** por recuperación productiva de respuesta incierta, continuidad
+tras reinicio de teléfono reportado y readback sin sesiones duplicadas.
+El hito 6 (errores físicos Samsung y cierre repetible de release) se
+**difirió el 08-Oct 23:21 CDMX** porque no bloquea la webapp ni la operación
+asistida; el siguiente foco de desarrollo aprobado es **Coach Digital**.
+No solicitar nuevas pruebas o reinstalaciones para el hito pausado salvo
+regresión crítica o nueva instrucción.
+
+El 11-Oct la pantalla Android v0.7 mostró `READ PASS · 75 records` y
+`confirmed:4 · staged:3 · recovery:confirmed`; es evidencia de lectura y
+estado local, **no** prueba tres nuevas entregas remotas. Intake/binding
+seguían ON y entrega continua/migración OFF en el último readback remoto
+aceptado del 08-Oct. Adquisición/conciliación automáticas y gate vertical
+continúan abiertos. **Bridge no alcanza PASS** ni se cambia avance
+por documentación.
 
 ## Aviso
 
