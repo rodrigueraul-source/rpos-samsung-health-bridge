@@ -1,5 +1,16 @@
 # Android v0.6 — explicit read-only receipt recovery
 
+> **Estado vigente al 11-Oct-2026 (solo documentación):** R-POS Program Registry /
+> Implementation Log en Notion registran **BUILD 83.33% (5/6)**. El hito 5 fue
+> aceptado el 08-Oct con recuperación productiva de respuesta incierta y
+> continuidad posterior al reinicio reportado. El hito 6 (errores Samsung /
+> cierre release) está **PAUSADO por instrucción del propietario** desde
+> 08-Oct 23:21 CDMX; siguiente foco: Coach Digital. Intake/binding ON y
+> entrega continua/migración OFF en el último readback operativo.
+> Este archivo describe procedimientos y checkpoints **históricos v0.5/v0.6**:
+> no ejecutar pruebas, instalar APK, enviar datos ni cambiar flags por la
+> actualización documental. Ver [avance vigente](progress-evidence.md).
+
 The ordinary phone queue already has a confirmed real receipt. Ordinary CHECK
 correctly skips confirmed entries. Re-uploading its Exercise JSON to create a
 test pending state would touch intake and could invoke delivery if flags changed.
@@ -95,8 +106,7 @@ Collect the pending screen (`response discarded`), reboot report and the final
 fresh-check screen (`recovery: confirmed`). Independently check canonical
 UID/page/count/evidence preservation in R-POS afterwards. This can establish
 controlled phone persistence/recovery; actual uncertain remote-write recovery
-and remaining physical Samsung errors remain distinct gates. BUILD stays
-66.67%, four of six verified milestones until the complete criteria are met.
+and remaining physical Samsung errors remain distinct gates. at that v0.6 preparation checkpoint BUILD was 66.67%, four of six. The later 08-Oct operating evidence accepted milestone 5; BUILD is now 83.33%, five of six, and milestone 6 is paused. A separate read-only probe does not itself establish arbitrary real-outage recovery.
 
 Synthetic Kotlin tests use an independent cross-language signing vector,
 fresh runtime objects, storage-before-network assertions, failed readbacks,
