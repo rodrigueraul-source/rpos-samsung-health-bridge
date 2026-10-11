@@ -1,5 +1,16 @@
 # Android delivery and receipt recovery
 
+> **Estado vigente al 11-Oct-2026 (solo documentación):** R-POS Program Registry /
+> Implementation Log en Notion registran **BUILD 83.33% (5/6)**. El hito 5 fue
+> aceptado el 08-Oct con recuperación productiva de respuesta incierta y
+> continuidad posterior al reinicio reportado. El hito 6 (errores Samsung /
+> cierre release) está **PAUSADO por instrucción del propietario** desde
+> 08-Oct 23:21 CDMX; siguiente foco: Coach Digital. Intake/binding ON y
+> entrega continua/migración OFF en el último readback operativo.
+> Este archivo describe procedimientos y checkpoints **históricos v0.5/v0.6**:
+> no ejecutar pruebas, instalar APK, enviar datos ni cambiar flags por la
+> actualización documental. Ver [avance vigente](progress-evidence.md).
+
 This changes the own app, not the live Apps Script project. No endpoint/key is
 embedded in source, BuildConfig, APK or links. No real export is a test fixture.
 The mock flavor cannot upload; shared synthetic unit tests validate the protocol.
@@ -106,7 +117,7 @@ module replacement, new version of the same deployment, APK update and one
 explicit checkpoint/reboot/recheck test. Accepted READ, intake, cutover and
 alias evidence are not repeated. This controlled probe does not prove an
 interrupted Notion write or close full BR06. Remaining physical Samsung UAT
-and operational closure are separate. Registry remains BUILD 66.67%, 4/6.
+and operational closure are separate. In this earlier v0.6 build checkpoint the registry was BUILD 66.67%, 4/6; current accepted status is BUILD 83.33%, 5/6 with gate 6 paused (see progress-evidence.md).
 
 Official references:
 - https://developer.android.com/privacy-and-security/keystore
