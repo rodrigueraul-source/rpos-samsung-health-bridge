@@ -1,23 +1,52 @@
 # Samsung Health Bridge — avance y evidencia
 
-La Master WBS V2.0 conserva el 35% como baseline histórico sin una fórmula
-de pesos. Tras la instrucción de Raul del 06-Oct de medir el avance real,
-el checkpoint actual registra **66.67% por hitos verificados: 4 de 6**.
-Es un conteo explícito de seis hitos de integración, no una estimación del
-esfuerzo consumido o del tiempo restante. No representa Bridge PASS ni 80%.
-La corrección de aliases y documentación no suman otro hito por sí solas.
+## Estado vigente · conciliación Notion/GitHub · 11-Oct-2026
 
-| Hito de integración | Estado al 06-Oct | Evidencia / condición restante |
+**BUILD · 83.33% · 5/6 hitos verificados · HITO 6 PAUSADO.**
+Control maestro: R-POS Program Registry e Implementation Log de Notion
+(checkpoint operativo del 08-Oct y decisión 08-Oct 23:21 CDMX).
+La Master WBS V2.0 conserva el 35% como baseline histórico anterior;
+el progreso actual cuenta seis hitos explícitos, sin ponderar horas,
+esfuerzo, pruebas ni documentación. No hay Bridge PASS.
+
+| Hito de integración | Estado vigente | Evidencia / restricción |
 | --- | --- | --- |
-| 1. Build propio reproducible, SDK fijado y APK firmado | Verificado | Build/CI, 29 pruebas Android, firma/paquete verificados |
-| 2. Lectura física propia y contrato de origen | Verificado | UID/tiempos/segmentos reales, READ permitido/denegado/restaurado y relectura |
-| 3. Recepción firmada privada y cola de actividad | Verificado | Primer envío real en Drive privado, hash/UID únicos, reapertura y recheck aceptados |
-| 4. Integración operativa a Notion y continuidad scheduler | Verificado en operación acotada | Apps Script confirmed17:39:24, replay sin escrituras, scheduler reuse y readback independiente; 65 sesiones sin duplicados, registro/aliases/métricas conservados |
-| 5. Recuperación real ante resultado incierto y reinicio de proceso/OS | Parcial; hito pendiente | Cola confirmed física; reinicio reportado por propietario. Falta evidencia independiente tras reinicio con checkpoint pendiente y recuperación de escritura incierta real |
-| 6. Hardening Samsung y cierre operativo repetible | Pendiente | Otros errores físicos Samsung, validación operacional/release |
+| 1. Build propio reproducible, SDK y APK firmado | VERIFICADO | Build/CI, firma y paquete aceptados previamente |
+| 2. Lectura física propia y contrato de origen | VERIFICADO | READ real, UID/segmentos, permisos denegados/restaurados y relectura |
+| 3. Recepción firmada privada y cola | VERIFICADO | Intake Drive autenticado, UID/hash, cola persistente |
+| 4. Integración acotada a Notion y continuidad scheduler | VERIFICADO | Destino único, bloque v2, readback, aliases y replay sin duplicados |
+| 5. Recuperación de respuesta incierta y continuidad OS/proceso | VERIFICADO 08-Oct | Respuesta perdida recuperada en ejecución real; replay sin nuevas escrituras; reinicio reportado por propietario seguido de capturas READ/CHECK y mismo registro sin pérdida. No telemetría de boot ni falla natural generalizada |
+| 6. Hardening Samsung y cierre operativo repetible | PENDIENTE · PAUSADO 08-Oct 23:21 | Faltan casos físicos Samsung de error y checklist release. Diferido por no bloquear la webapp ni la operación asistida confirmada |
 
-Los cuatro hitos aceptados tienen evidencia técnica/física previa al cambio de
-medición. SA-RPOS-VERTICAL-001 sigue separado; no se cierra por este conteo.
+### Evidencia posterior al hito 5
+
+- **08-Oct 12:57–13:27 CDMX:** Core confirmado por operador real
+  (`notion_confirmed=true`, `response_loss_recovered=true`,
+  `replay_without_remote_writes=true`, flags sin cambios), mismo UID
+  en fila existente, export y bloque v2 exactos; teléfono reiniciado según
+  el propietario antes de capturas posteriores de lectura y confirmación.
+  El conjunto fue aceptado como hito 5.
+- **08-Oct 22:59–23:21 CDMX:** v0.7 entrega natación en operación acotada,
+  acuse local `confirmed:4 / staged:1`; readback independiente encontró
+  una sola fila canónica y el registro SDK conservado. En ese corte, Notion
+  verificó 68 sesiones Fitness; no es un contador en vivo del 11-Oct.
+  Se difirió el hito 6 y la prioridad cambió a Coach Digital.
+- **11-Oct, pantalla del propietario:** `READ PASS · 75 records`,
+  selección WALKING; cola local `confirmed:4 / staged:3 /
+  recovery:confirmed`. READ PASS confirma lectura en el dispositivo,
+  no entrega remota adicional, atribución de UID staged ni cierre de hito.
+  La diferencia frente a `4/1` del 08-Oct no se reconcilia sin recibos
+  nuevos; el usuario no autorizó reactivar el gate técnico para ello.
+
+**Límites operativos:** intake/binding ON y entrega continua/migración OFF
+según último checkpoint remoto verificado, no nueva auditoría de flags.
+Adquisición/conciliación automáticas y SA-RPOS-VERTICAL-001 siguen pendientes,
+separados del conteo 5/6. No correr finalizadores, reenviar entrenamientos,
+modificar Apps Script/APK, ni abrir nuevas pruebas del hito6 por esta edición.
+**Siguiente foco:** Coach Digital. Mantener historial, archivos y pruebas
+técnicas anteriores sin presentarlos como estado vigente.
+
+## Historial anterior · 05–06 Oct (no sustituye el estado vigente)
 
 ## Corrección de alias histórico revisado · 06-Oct
 
