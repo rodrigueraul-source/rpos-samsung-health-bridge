@@ -31,7 +31,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -47,6 +50,7 @@ class MainActivity : Activity() {
     private lateinit var recoveryButton: Button
     private lateinit var deliveryStatus: TextView
     private var deliveryBusy = false
+    private var receiptPollingJob: Job? = null
     private var selection: ExerciseSelection? = null
     private var selectedRecordJson: String? = null
     private val readScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -216,15 +220,15 @@ class MainActivity : Activity() {
         sendButton.isEnabled = !deliveryBusy && selectedRecordJson != null && ExerciseReaderProvider.SOURCE == "samsung_health"
     }
 
-    private fun deliveryTask(task: (AndroidBridgeRuntime) -> String) {
-        if (deliveryBusy) return
+    private fun deliveryTask(announce: Boolean = true, task: (AndroidBridgeRuntime) -> String): Job? {
+        if (deliveryBusy) return null
         deliveryBusy = true
         updateSendEnabled()
         pendingButton.isEnabled = false
         configureButton.isEnabled = false
         recoveryButton.isEnabled = false
-        deliveryStatus.text = "Checking private receipt state..."
-        readScope.launch {
+        if (announce) deliveryStatus.text = "Checking private receipt state..."
+        return readScope.launch {
             try {
                 deliveryStatus.text = withContext(Dispatchers.IO) { task(AndroidBridgeRuntime.get(this@MainActivity)) }
             } catch (e: CancellationException) { throw e }
@@ -239,6 +243,24 @@ class MainActivity : Activity() {
                 updateSendEnabled()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Foreground acknowledgement reads only: no background acquisition,
+        // workout uploads, delivery activation, or persistent scheduler.
+        receiptPollingJob = readScope.launch {
+            while (isActive) {
+                if (!deliveryBusy) deliveryTask(announce = false) { it.pollPendingReceipts() }?.join()
+                delay(5000)
+            }
+        }
+    }
+
+    override fun onStop() {
+        receiptPollingJob?.cancel()
+        receiptPollingJob = null
+        super.onStop()
     }
 
     private fun sendSelected() {
