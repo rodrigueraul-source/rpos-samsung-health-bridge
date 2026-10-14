@@ -31,6 +31,7 @@ import com.rpos.bridge.source.ExerciseReaderProvider
 import com.rpos.bridge.source.ExerciseReadFailure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
@@ -39,6 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.time.Instant
 
 class MainActivity : Activity() {
@@ -53,6 +55,7 @@ class MainActivity : Activity() {
     private lateinit var automaticButton: Button
     private lateinit var deliveryStatus: TextView
     private var deliveryBusy = false
+    private var exerciseReadBusy = false
     private var receiptPollingJob: Job? = null
     private var selection: ExerciseSelection? = null
     private var selectedRecordJson: String? = null
@@ -159,6 +162,8 @@ class MainActivity : Activity() {
     }
 
     private fun readExercise() {
+        if (deliveryBusy || exerciseReadBusy) return
+        exerciseReadBusy = true
         status.text = "Reading..."
         selectedRecordJson = null
         selection = null
@@ -166,37 +171,40 @@ class MainActivity : Activity() {
         recordPicker.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, emptyList())
         copyButton.isEnabled = false
         sendButton.isEnabled = false
-        readButton.isEnabled = false
+        updateActionsEnabled()
         readScope.launch {
-            val result = runCatching {
-                ExerciseReaderProvider.create(this@MainActivity)
-                    .readRecentExercises(days = 30)
-                    .let { records ->
-                        // Build the export inside the same error boundary as the read.
-                        ExerciseSelection(records, ExerciseReaderProvider.SOURCE, Instant.now().toString())
-                    }
-            }.onFailure { if (it is CancellationException) throw it }
-            result.fold(
-                onSuccess = { batch ->
-                    selection = batch
-                    if (batch.count == 0) {
-                        status.text = "NO DATA · no Exercise records in the last 30 days"
-                    } else {
-                        recordPicker.adapter = ArrayAdapter(this@MainActivity,
-                            android.R.layout.simple_spinner_item, batch.labels).apply {
-                            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            try {
+                val result = runCatching {
+                    ExerciseReaderProvider.create(this@MainActivity)
+                        .readRecentExercises(days = 30)
+                        .let { records ->
+                            // Build the export inside the same error boundary as the read.
+                            ExerciseSelection(records, ExerciseReaderProvider.SOURCE, Instant.now().toString())
                         }
-                        recordPicker.isEnabled = true
-                        renderSelection(0)
+                }.onFailure { if (it is CancellationException) throw it }
+                result.fold(
+                    onSuccess = { batch ->
+                        selection = batch
+                        if (batch.count == 0) {
+                            status.text = "NO DATA · no Exercise records in the last 30 days"
+                        } else {
+                            recordPicker.adapter = ArrayAdapter(this@MainActivity,
+                                android.R.layout.simple_spinner_item, batch.labels).apply {
+                                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                            }
+                            recordPicker.isEnabled = true
+                            renderSelection(0)
+                        }
+                    },
+                    onFailure = { error ->
+                        showReadFailure(error)
                     }
-                },
-                onFailure = { error ->
-                    showReadFailure(error)
-                }
-            )
-            readButton.isEnabled = true
-            copyButton.isEnabled = selectedRecordJson != null
-            updateSendEnabled()
+                )
+            } finally {
+                exerciseReadBusy = false
+                copyButton.isEnabled = selectedRecordJson != null
+                updateActionsEnabled()
+            }
         }
     }
 
@@ -228,7 +236,7 @@ class MainActivity : Activity() {
             batch.select(index)
             selectedRecordJson = batch.toJson()
             val record = batch.selectedRecord ?: return
-            status.text = "READ PASS · ${batch.count} records\n" +
+            status.text = "READ PASS · ${batch.count} records · ${BuildConfig.VERSION_NAME}\n" +
                 "Selected: ${index + 1}/${batch.count}\n" +
                 "UID: ${record.sourceRecordId}\n" +
                 "Title: ${record.customTitle ?: record.exerciseType}\n" +
@@ -236,7 +244,7 @@ class MainActivity : Activity() {
                 "Sessions: ${record.sessions?.size ?: 0}\n" +
                 "Choose a record, then COPY SELECTED JSON."
             copyButton.isEnabled = selectedRecordJson != null
-            updateSendEnabled()
+            updateActionsEnabled()
         }.onFailure {
             selectedRecordJson = null
             sendButton.isEnabled = false
@@ -244,17 +252,20 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun updateSendEnabled() {
-        sendButton.isEnabled = !deliveryBusy && selectedRecordJson != null && ExerciseReaderProvider.SOURCE == "samsung_health"
+    private fun updateActionsEnabled() {
+        val idle = !deliveryBusy && !exerciseReadBusy
+        readButton.isEnabled = idle
+        pendingButton.isEnabled = idle
+        configureButton.isEnabled = idle
+        recoveryButton.isEnabled = idle
+        automaticButton.isEnabled = idle
+        sendButton.isEnabled = idle && selectedRecordJson != null && ExerciseReaderProvider.SOURCE == "samsung_health"
     }
 
     private fun deliveryTask(announce: Boolean = true, task: (AndroidBridgeRuntime) -> String): Job? {
-        if (deliveryBusy) return null
+        if (deliveryBusy || exerciseReadBusy) return null
         deliveryBusy = true
-        updateSendEnabled()
-        pendingButton.isEnabled = false
-        configureButton.isEnabled = false
-        recoveryButton.isEnabled = false
+        updateActionsEnabled()
         if (announce) deliveryStatus.text = "Checking private receipt state..."
         return readScope.launch {
             try {
@@ -265,10 +276,7 @@ class MainActivity : Activity() {
                 deliveryStatus.text = "DELIVERY · $safe · original receipts retained"
             } finally {
                 deliveryBusy = false
-                pendingButton.isEnabled = true
-                configureButton.isEnabled = true
-                recoveryButton.isEnabled = true
-                updateSendEnabled()
+                updateActionsEnabled()
             }
         }
     }
@@ -302,6 +310,7 @@ class MainActivity : Activity() {
     }
 
     private fun configureAutomatic() {
+        if (deliveryBusy || exerciseReadBusy) return
         AlertDialog.Builder(this).setTitle("Automatic workouts")
             .setMessage("Enable only after the backend pilot is approved. Reads completed Samsung exercises and uses your existing private delivery setup. The first read sets a future-only cutover; existing workouts are excluded. Android schedules work about every 15 minutes and may delay it. Pause preserves the cutover and all receipts.")
             .setNegativeButton("Cancel", null)
@@ -312,10 +321,13 @@ class MainActivity : Activity() {
             }
             .setPositiveButton("Enable / resume") { _, _ ->
                 readScope.launch {
-                    if (deliveryBusy) return@launch
-                    deliveryBusy = true; automaticButton.isEnabled = false; updateSendEnabled()
+                    if (deliveryBusy || exerciseReadBusy) return@launch
+                    deliveryBusy = true; updateActionsEnabled()
+                    deliveryStatus.text = "AUTOMATIC · preparing Samsung baseline (up to 2 minutes) · activation unchanged"
                     try {
-                        val records = ExerciseReaderProvider.create(this@MainActivity).readRecentExercises(30)
+                        val records = withTimeout(120000) {
+                            ExerciseReaderProvider.create(this@MainActivity).readRecentExercises(30)
+                        }
                         deliveryStatus.text = withContext(Dispatchers.IO) {
                             val runtime = AndroidBridgeRuntime.get(this@MainActivity)
                             runtime.enableAutomatic(records, Instant.now())
@@ -323,12 +335,14 @@ class MainActivity : Activity() {
                             catch (e: Exception) { runtime.pauseAutomatic(); throw e }
                             runtime.summary()
                         }
+                    } catch (e: TimeoutCancellationException) {
+                        deliveryStatus.text = "AUTOMATIC · read_timeout · activation unchanged · receipts retained"
                     } catch (e: CancellationException) { throw e }
                     catch (e: Exception) {
                         deliveryStatus.text = "AUTOMATIC · " +
                             (if (e is BridgeFailure) e.code else "read_or_setup_failed") + " · receipts retained"
                     } finally {
-                        deliveryBusy = false; automaticButton.isEnabled = true; updateSendEnabled()
+                        deliveryBusy = false; updateActionsEnabled()
                     }
                 }
             }.show()
