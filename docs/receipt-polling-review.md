@@ -25,10 +25,12 @@ without the backend canonical journal/evidence cannot be marked confirmed.
 
 ## Release boundary
 
-This PR targets the current Android development branch. Its build metadata is
-still 0.6.0; the installed 0.7.0 Samsung hardening source is not present on that
-branch. Do not ship this branch as 0.7.1 or replace the installed APK before
-reconciling that source and preserving the established signing identity.
+The initial PR targeted the 0.6.0 Android development branch. The 0.7.1
+release now restores the installed 0.7.0 R-POS hardening from the verified
+owner APK and preserves its established signing identity. The original Git
+commit/Kotlin text was not recovered; this is a documented source recovery,
+not a claim to reproduce that missing commit. Physical acceptance remains
+pending; see `release-v0.7.1.md`.
 
 Unit tests use synthetic receipts and exercise identity-only polling,
 three-entry draining, lost local confirmation, restart/backoff, unresolved

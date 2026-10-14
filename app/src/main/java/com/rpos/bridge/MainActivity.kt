@@ -27,6 +27,7 @@ import com.rpos.bridge.delivery.AndroidBridgeRuntime
 import com.rpos.bridge.delivery.BridgeFailure
 import com.rpos.bridge.model.ExerciseSelection
 import com.rpos.bridge.source.ExerciseReaderProvider
+import com.rpos.bridge.source.ExerciseReadFailure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -182,13 +183,32 @@ class MainActivity : Activity() {
                     }
                 },
                 onFailure = { error ->
-                    status.text = "READ FAIL · ${error::class.java.simpleName}: ${error.message}"
+                    showReadFailure(error)
                 }
             )
             readButton.isEnabled = true
             copyButton.isEnabled = selectedRecordJson != null
             updateSendEnabled()
         }
+    }
+
+    private fun showReadFailure(error: Throwable) {
+        val failure = error as? ExerciseReadFailure
+        status.text = failure?.let { "READ FAIL · ${it.code}\n${it.userMessage}" }
+            ?: "READ FAIL · ${error::class.java.simpleName}\nUnable to read exercises. Tap READ EXERCISE to retry."
+        val resolution = failure?.resolution ?: return
+        AlertDialog.Builder(this)
+            .setTitle("Samsung Health needs attention")
+            .setMessage("${failure.userMessage}\n\nAfter setup, return here and tap READ EXERCISE.")
+            .setNegativeButton("Later", null)
+            .setPositiveButton("Open setup") { _, _ ->
+                try {
+                    resolution()
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    status.text = "READ FAIL · setup_unavailable\nOpen Samsung Health or Android settings manually, then tap READ EXERCISE again."
+                }
+            }.show()
     }
 
     private fun renderSelection(index: Int) {

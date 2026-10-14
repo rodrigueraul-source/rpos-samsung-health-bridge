@@ -14,8 +14,8 @@ android {
         applicationId = "com.rpos.bridge"
         minSdk = 29
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 8
+        versionName = "0.7.1"
     }
 
     flavorDimensions += "healthSource"
@@ -39,6 +39,7 @@ android {
 
     // Both real flavors use the same read-only Samsung provider.
     sourceSets.getByName("delivery").java.srcDir("src/samsung/java")
+    sourceSets.getByName("testDelivery").java.srcDir("src/testSamsung/java")
     defaultConfig.resValue("string", "app_name", "R-POS Samsung Health Bridge")
 
     buildTypes {
