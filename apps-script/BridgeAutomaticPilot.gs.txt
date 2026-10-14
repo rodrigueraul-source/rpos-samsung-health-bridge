@@ -1,0 +1,157 @@
+/* Owner-run activation ONLY after explicit approval of a future-only, three-page pilot.
+ * Install separately in the existing project. Adds/reuses one bounded pending-receipt
+ * clock. Does not deploy, contact Drive/Notion, read health records, or change receipt journals.
+ * Existing immutable cutoffs are never replaced. Continuous mode is not accepted. */
+var RPOS_BRIDGE_AUTOMATIC_PILOT_V1_ = (function() {
+  const version = 'rpos.bridge.automatic.pilot.control.v1';
+  const keys = ['BRIDGE_AUTOMATIC_START_AT', 'BRIDGE_AUTOMATIC_MODE', 'BRIDGE_AUTOMATIC_MAX_NEW',
+    'BRIDGE_MIGRATION_ENABLED', 'BRIDGE_AUTOMATIC_ENABLED', 'BRIDGE_DELIVERY_ENABLED',
+    'BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION'];
+  function canonical(value) {
+    const sorted = {}; Object.keys(value).sort().forEach(function(k) { sorted[k] = value[k]; });
+    return JSON.stringify(sorted);
+  }
+  function unrelated(value) {
+    const result = {}; Object.keys(value).forEach(function(k) { if (keys.indexOf(k) < 0) result[k] = value[k]; });
+    return canonical(result);
+  }
+  function timers() {
+    const all = ScriptApp.getProjectTriggers(), pending = [], others = [];
+    all.forEach(function(t) {
+      if (t.getHandlerFunction() === 'rposBridgeRunAutomaticPending') pending.push(t);
+      else others.push(t.getUniqueId() + ':' + t.getHandlerFunction() + ':' + String(t.getEventType()));
+    });
+    return {pending:pending, others:others.sort().join('\n'), valid:pending.length <= 1 &&
+      pending.every(function(t) { return t.getEventType() === ScriptApp.EventType.CLOCK; })};
+  }
+  function inspect(props) {
+    const all = props.getProperties(), now = Date.now();
+    let bound = false, start = null, journalOk = true, attempting = 0, confirmed = 0;
+    try {
+      bound = typeof RPOS !== 'undefined' && typeof rposBridgeUuid_ === 'function' &&
+        rposBridgeUuid_(all.BRIDGE_FITNESS_DATA_SOURCE_ID) === rposBridgeUuid_(RPOS.fitnessDataSourceId);
+      if (all.BRIDGE_AUTOMATIC_START_AT && typeof rposBridgeTime_ === 'function') {
+        const time = rposBridgeTime_(all.BRIDGE_AUTOMATIC_START_AT);
+        if (time <= now) start = all.BRIDGE_AUTOMATIC_START_AT;
+      }
+    } catch (ignore) { /* Invalid configuration is never echoed. */ }
+    Object.keys(all).filter(function(k) { return /^RPOS_BRIDGE_DELIVERY_[a-f0-9]{64}$/.test(k); })
+      .forEach(function(k) {
+        try {
+          const j = JSON.parse(all[k]);
+          if (!j || Array.isArray(j) || typeof j !== 'object') throw new Error('journal');
+          if (j.mode !== 'automatic_new_page') return;
+          if (j.receipt_id !== k.slice('RPOS_BRIDGE_DELIVERY_'.length) ||
+              !/^[a-f0-9]{64}$/.test(j.record_hash || '') ||
+              ['attempting', 'confirmed'].indexOf(j.state) < 0) throw new Error('journal');
+          if (j.state === 'confirmed') { rposBridgeUuid_(j.page_id); confirmed++; }
+          else { if (j.page_id != null) rposBridgeUuid_(j.page_id); attempting++; }
+        } catch (ignore) { journalOk = false; }
+      });
+    const clock = timers();
+    const configured = !!bound && typeof rposBridgeAutomaticReceipt_ === 'function' &&
+      typeof rposBridgeRunAutomaticPending === 'function' &&
+      !!all.BRIDGE_RECEIPT_FOLDER_ID && !!all.NOTION_TOKEN &&
+      /^[a-f0-9]{64}$/.test(all.BRIDGE_INTAKE_HMAC_KEY || '') &&
+      all.BRIDGE_INTAKE_ENABLED === 'true' && all.BRIDGE_SCHEDULER_BINDING_REVIEWED === 'true';
+    const validPilot = configured && journalOk && start && all.BRIDGE_AUTOMATIC_MODE === 'pilot' &&
+      all.BRIDGE_AUTOMATIC_MAX_NEW === '3' && all.BRIDGE_MIGRATION_ENABLED === 'false' &&
+      attempting + confirmed <= 3;
+    const active = !!validPilot && clock.valid && clock.pending.length === 1 &&
+      all.BRIDGE_AUTOMATIC_ENABLED === 'true' && all.BRIDGE_DELIVERY_ENABLED === 'true';
+    return {all: all, configured: !!configured, journalOk: journalOk, active: active,
+      clock:clock,
+      report: {schema_version: 'rpos.bridge.automatic.pilot.activation.v1', status: active ?
+        (attempting + confirmed === 3 ? 'pilot_full_review_required' : 'pilot_active') : 'review_required',
+        source_binding_matches: !!bound, configuration_present: !!configured, start_at: start,
+        mode: all.BRIDGE_AUTOMATIC_MODE === 'pilot' ? 'pilot' : null,
+        max_new: all.BRIDGE_AUTOMATIC_MAX_NEW === '3' ? 3 : null,
+        flags: {intake: all.BRIDGE_INTAKE_ENABLED === 'true', binding_reviewed: all.BRIDGE_SCHEDULER_BINDING_REVIEWED === 'true',
+          delivery: all.BRIDGE_DELIVERY_ENABLED === 'true', automatic: all.BRIDGE_AUTOMATIC_ENABLED === 'true',
+          migration: all.BRIDGE_MIGRATION_ENABLED === 'true'}, automatic_attempting: attempting,
+        automatic_confirmed: confirmed, journal_shape_valid: journalOk,
+        health_services_called: false, retry_clock_count:clock.pending.length,
+        retry_clock_shape_valid:clock.valid}};
+  }
+  function emit(report) { if (typeof Logger !== 'undefined') Logger.log(JSON.stringify(report)); return report; }
+  function enable() {
+    let locked = false, props, touched = false;
+    const lock = LockService.getScriptLock();
+    try {
+      locked = lock.tryLock(1000);
+      if (!locked) return emit({schema_version:'rpos.bridge.automatic.pilot.activation.v1',status:'busy'});
+      props = PropertiesService.getScriptProperties();
+      const before = inspect(props), a = before.all;
+      if (before.active) { before.report.activation_changed = false; return emit(before.report); }
+      const off = function(v) { return v == null || v === 'false'; };
+      const owned = a.BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION === version && before.report.start_at &&
+        a.BRIDGE_AUTOMATIC_MODE === 'pilot' && a.BRIDGE_AUTOMATIC_MAX_NEW === '3';
+      if (!before.configured || !before.journalOk || !before.clock.valid || !off(a.BRIDGE_DELIVERY_ENABLED) ||
+          !off(a.BRIDGE_AUTOMATIC_ENABLED) || !off(a.BRIDGE_MIGRATION_ENABLED) ||
+          before.report.automatic_attempting + before.report.automatic_confirmed > 0 ||
+          (a.BRIDGE_AUTOMATIC_START_AT && !owned) ||
+          (a.BRIDGE_AUTOMATIC_MODE && a.BRIDGE_AUTOMATIC_MODE !== 'pilot') ||
+          (a.BRIDGE_AUTOMATIC_MAX_NEW && a.BRIDGE_AUTOMATIC_MAX_NEW !== '3') ||
+          (a.BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION && a.BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION !== version)) {
+        before.report.activation_changed = false; return emit(before.report);
+      }
+      const updates = {BRIDGE_AUTOMATIC_START_AT: owned ? a.BRIDGE_AUTOMATIC_START_AT : new Date(Date.now()).toISOString(),
+        BRIDGE_AUTOMATIC_MODE:'pilot', BRIDGE_AUTOMATIC_MAX_NEW:'3', BRIDGE_MIGRATION_ENABLED:'false',
+        BRIDGE_AUTOMATIC_ENABLED:'false', BRIDGE_DELIVERY_ENABLED:'false', BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION:version};
+      touched = true;
+      props.setProperties(updates, false); // Explicitly preserve every unrelated property and receipt journal.
+      function verified() {
+        const current = props.getProperties();
+        return Object.keys(updates).every(function(k) { return current[k] === updates[k]; }) &&
+          unrelated(current) === unrelated(a);
+      }
+      if (!verified()) throw new Error('readback');
+      let clockCreated = false;
+      if (!before.clock.pending.length) {
+        ScriptApp.newTrigger('rposBridgeRunAutomaticPending').timeBased().everyMinutes(5).create();
+        clockCreated = true;
+      }
+      const clockAfter = timers();
+      if (!clockAfter.valid || clockAfter.pending.length !== 1 || clockAfter.others !== before.clock.others) {
+        throw new Error('clock_readback');
+      }
+      // Automatic first, delivery last: no transient legacy delivery window.
+      updates.BRIDGE_AUTOMATIC_ENABLED = 'true'; props.setProperty('BRIDGE_AUTOMATIC_ENABLED', 'true');
+      if (!verified()) throw new Error('readback');
+      updates.BRIDGE_DELIVERY_ENABLED = 'true'; props.setProperty('BRIDGE_DELIVERY_ENABLED', 'true');
+      if (!verified()) throw new Error('readback');
+      const after = inspect(props);
+      if (!after.active) throw new Error('readback');
+      after.report.activation_changed = true; after.report.unrelated_properties_unchanged = true;
+      after.report.cutoff_preserved = !!owned;
+      after.report.retry_clock_created = clockCreated;
+      after.report.retry_every_minutes_requested = clockCreated ? 5 : null;
+      after.report.legacy_triggers_unchanged = true;
+      return emit(after.report);
+    } catch (ignore) {
+      let disabled = !touched;
+      if (touched && props) {
+        try {
+          props.setProperty('BRIDGE_DELIVERY_ENABLED','false');
+          props.setProperty('BRIDGE_AUTOMATIC_ENABLED','false');
+          disabled = props.getProperty('BRIDGE_DELIVERY_ENABLED') === 'false' && props.getProperty('BRIDGE_AUTOMATIC_ENABLED') === 'false';
+        } catch (ignored) { disabled = false; }
+      }
+      return emit({schema_version:'rpos.bridge.automatic.pilot.activation.v1',
+        status: disabled ? 'activation_stopped_review_required' : 'activation_unresolved',
+        delivery_disabled_verified: disabled, health_services_called:false});
+    } finally { if (locked) { try { lock.releaseLock(); } catch (ignore) {} } }
+  }
+  function status() {
+    const props = PropertiesService.getScriptProperties(), before = canonical(props.getProperties()), clock = timers();
+    const report = inspect(props).report; report.read_only = true;
+    report.properties_unchanged = before === canonical(props.getProperties());
+    const after = timers(); report.triggers_unchanged = clock.others === after.others &&
+      canonical(clock.pending.map(function(t) { return t.getUniqueId(); })) ===
+      canonical(after.pending.map(function(t) { return t.getUniqueId(); }));
+    return emit(report);
+  }
+  return {enable:enable, status:status};
+})();
+function rposBridgeEnableAutomaticPilot() { return RPOS_BRIDGE_AUTOMATIC_PILOT_V1_.enable(); }
+function rposBridgeAutomaticPilotStatus() { return RPOS_BRIDGE_AUTOMATIC_PILOT_V1_.status(); }
