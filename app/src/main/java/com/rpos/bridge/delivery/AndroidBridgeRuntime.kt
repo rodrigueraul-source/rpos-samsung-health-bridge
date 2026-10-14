@@ -145,20 +145,21 @@ class AndroidBridgeRuntime private constructor(context: Context) {
         automaticResult("completed")
         return summary()
     }
-    @Synchronized fun summary(): String = queue.summary() + recovery.summary() +
+    private fun withAutomaticStatus(receipts: String): String = receipts +
         (automaticPolicy()?.let { " · automatic: " + (if (it.enabled) "ON" else "paused") + " / " + it.lastResult }
             ?: " · automatic: OFF")
+    @Synchronized fun summary(): String = withAutomaticStatus(queue.summary() + recovery.summary())
     @Synchronized fun pollPendingReceipts(): String {
         val config = config() ?: return summary()
-        return if (recovery.active()) recovery.resume(config) else {
+        return withAutomaticStatus(if (recovery.active()) recovery.resume(config) else {
             queue.pollReceipts(config, max = 3) + recovery.summary()
-        }
+        })
     }
     @Synchronized fun checkPending(): String {
         val config = config() ?: throw BridgeFailure("not_configured")
-        return if (recovery.active()) recovery.resume(config) else {
+        return withAutomaticStatus(if (recovery.active()) recovery.resume(config) else {
             queue.sendDue(config, max = 1) + recovery.summary()
-        }
+        })
     }
 
     @Synchronized fun config(): BridgeConfig? = vault.read("bridge-config.enc")?.let {
