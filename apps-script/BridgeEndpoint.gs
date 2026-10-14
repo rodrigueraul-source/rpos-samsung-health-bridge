@@ -96,7 +96,9 @@ function doPost(e) {
       // The outer staged receipt never claims Notion confirmation. With delivery OFF,
       // only acknowledge a prior confirmed journal after fresh read-only evidence checks.
       if (result.status === 'staged' && properties.getProperty('BRIDGE_DELIVERY_ENABLED') === 'true') {
-        result.delivery = rposBridgeDeliverReceipt(result.receipt_id);
+        result.delivery = properties.getProperty('BRIDGE_AUTOMATIC_ENABLED') === 'true' &&
+          typeof rposBridgeAutomaticReceipt_ === 'function' ? rposBridgeAutomaticReceipt_(result.receipt_id, properties) :
+          rposBridgeDeliverReceipt(result.receipt_id);
       } else if (result.status === 'staged') {
         const acknowledgement = rposBridgeAcknowledgeReceipt_(result, properties);
         if (acknowledgement) result.delivery = acknowledgement;

@@ -24,6 +24,7 @@ import android.text.InputType
 import android.widget.EditText
 import android.widget.ScrollView
 import com.rpos.bridge.delivery.AndroidBridgeRuntime
+import com.rpos.bridge.delivery.AutomaticSyncJob
 import com.rpos.bridge.delivery.BridgeFailure
 import com.rpos.bridge.model.ExerciseSelection
 import com.rpos.bridge.source.ExerciseReaderProvider
@@ -49,6 +50,7 @@ class MainActivity : Activity() {
     private lateinit var pendingButton: Button
     private lateinit var configureButton: Button
     private lateinit var recoveryButton: Button
+    private lateinit var automaticButton: Button
     private lateinit var deliveryStatus: TextView
     private var deliveryBusy = false
     private var receiptPollingJob: Job? = null
@@ -131,6 +133,11 @@ class MainActivity : Activity() {
             }
         }
 
+        automaticButton = Button(this).apply {
+            text = "AUTOMATIC SYNC"
+            visibility = if (ExerciseReaderProvider.SOURCE == "samsung_health") View.VISIBLE else View.GONE
+            setOnClickListener { configureAutomatic() }
+        }
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -144,6 +151,7 @@ class MainActivity : Activity() {
             addView(sendButton)
             addView(pendingButton)
             addView(recoveryButton)
+            addView(automaticButton)
         }
 
         setContentView(ScrollView(this).apply { addView(layout) })
@@ -291,6 +299,39 @@ class MainActivity : Activity() {
             val config = runtime.config() ?: throw BridgeFailure("not_configured")
             runtime.queue.sendDue(config, max = 1)
         }
+    }
+
+    private fun configureAutomatic() {
+        AlertDialog.Builder(this).setTitle("Automatic workouts")
+            .setMessage("Enable only after the backend pilot is approved. Reads completed Samsung exercises and uses your existing private delivery setup. The first read sets a future-only cutover; existing workouts are excluded. Android schedules work about every 15 minutes and may delay it. Pause preserves the cutover and all receipts.")
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("Pause") { _, _ ->
+                deliveryTask { runtime ->
+                    runtime.pauseAutomatic(); AutomaticSyncJob.pause(this); runtime.summary()
+                }
+            }
+            .setPositiveButton("Enable / resume") { _, _ ->
+                readScope.launch {
+                    if (deliveryBusy) return@launch
+                    deliveryBusy = true; automaticButton.isEnabled = false; updateSendEnabled()
+                    try {
+                        val records = ExerciseReaderProvider.create(this@MainActivity).readRecentExercises(30)
+                        deliveryStatus.text = withContext(Dispatchers.IO) {
+                            val runtime = AndroidBridgeRuntime.get(this@MainActivity)
+                            runtime.enableAutomatic(records, Instant.now())
+                            try { AutomaticSyncJob.schedule(this@MainActivity) }
+                            catch (e: Exception) { runtime.pauseAutomatic(); throw e }
+                            runtime.summary()
+                        }
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) {
+                        deliveryStatus.text = "AUTOMATIC · " +
+                            (if (e is BridgeFailure) e.code else "read_or_setup_failed") + " · receipts retained"
+                    } finally {
+                        deliveryBusy = false; automaticButton.isEnabled = true; updateSendEnabled()
+                    }
+                }
+            }.show()
     }
 
     private fun configureDelivery() {

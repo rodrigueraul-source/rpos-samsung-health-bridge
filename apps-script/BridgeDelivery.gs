@@ -147,10 +147,12 @@ function rposBridgePropertyJournal_(properties, prefix) {
   };
 }
 
-function rposBridgeNotionHttp_(token) {
+function rposBridgeNotionHttp_(token, createSourceId) {
   if (typeof token !== 'string' || !token.trim() || /[\r\n]/.test(token)) rposBridgeFailure_('not_configured');
   return {request: function(method, path, payload) {
-    if (!/^\/(?:data_sources|pages|blocks)\//.test(path) || /\/\/|#/.test(path)) {
+    const newPage = method === 'POST' && path === '/pages' && createSourceId && payload &&
+      payload.parent && payload.parent.type === 'data_source_id' && payload.parent.data_source_id === createSourceId;
+    if ((!newPage && !/^\/(?:data_sources|pages|blocks)\//.test(path)) || /\/\/|#/.test(path)) {
       rposBridgeFailure_('delivery_conflict');
     }
     const options = {method: method.toLowerCase(), muteHttpExceptions: true, followRedirects: false,
@@ -179,6 +181,10 @@ function rposBridgeDeliverReceipt(receiptId) {
     if (props.getProperty('BRIDGE_DELIVERY_ENABLED') !== 'true') return rposBridgeDeliveryResult_('disabled');
     if (props.getProperty('BRIDGE_SCHEDULER_BINDING_REVIEWED') !== 'true') {
       return rposBridgeDeliveryResult_('not_configured');
+    }
+    if (props.getProperty('BRIDGE_AUTOMATIC_ENABLED') === 'true') {
+      if (typeof rposBridgeAutomaticReceipt_ !== 'function') return rposBridgeDeliveryResult_('not_configured');
+      return rposBridgeAutomaticReceipt_(receiptId, props);
     }
     const folderId = props.getProperty('BRIDGE_RECEIPT_FOLDER_ID');
     const token = props.getProperty('NOTION_TOKEN');
