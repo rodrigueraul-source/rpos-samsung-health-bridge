@@ -21,18 +21,17 @@ puntos de esfuerzo; **no es Bridge PASS**.
   La captura del 11-Oct muestra `READ PASS · 75 records` y estado local
   `confirmed: 4 · staged: 3 · recovery: confirmed`: prueba lectura actual,
   **no** confirmación remota de las tres entradas staged.
-- **Hito 6 diferido:** otros errores físicos Samsung y checklist de release
+- **Checkpoint histórico del 08-Oct · hito 6 diferido:** otros errores físicos Samsung y checklist de release
   repetible. No pedir pruebas adicionales, reinstalaciones, finalizadores
   ni CHECK para cerrar este gate salvo regresión crítica o nueva instrucción.
 - **Configuración conservada según último readback operativo del 08-Oct:**
   intake/binding ON; entrega continua/migración OFF. Adquisición automática,
   conciliación automática y SA-RPOS-VERTICAL-001 permanecen fuera del PASS.
-- **Foco de desarrollo:** Coach Digital. No reactivar Bridge por esta corrección
-  documental; no alterar código, credenciales ni flags.
+- **Orden posterior del propietario:** cerrar release 0.7.1 y desarrollar adquisición/entrega automáticas conforme a WBS V3. Mantener entrega continua y migración OFF hasta validar los gates; no cambiar visibilidad.
 
 ### Candidato 0.7.1
 
-Se recuperaron el APK firmado0.7.0 y el AAR1.1.0 originales. El commit2cdc7f0 y su texto Kotlin no están disponibles; el hardening propio R-POS se restableció desde el bytecode del APK con procedencia explícita. La corrección de recibos conserva consultas HMAC, backoff persistente y polling visible. Mismo paquete/firma/campos persistidos; sin activación de entrega continua o migración. Instalación y tres ciclos físicos aún pendientes. Ver [revisión del release](docs/release-v0.7.1.md).
+Se recuperaron el APK firmado0.7.0 y el AAR1.1.0 originales. El commit2cdc7f0 y su texto Kotlin no están disponibles; el hardening propio R-POS se restableció desde el bytecode del APK con procedencia explícita. La corrección de recibos conserva consultas HMAC, backoff persistente y polling visible. Mismo paquete/firma/campos persistidos; sin activación de entrega continua o migración. Instalación y lectura real confirmadas. Tres ciclos consecutivos acotados de recibo/acuse/UID único aceptados; no sustituyen la adquisición y entrega automáticas pendientes. La primera ejecución carece de JSON final: no se atribuyen sus contadores de recovery/replay. Dos ejecuciones posteriores sí acreditan recuperación y replay sin nuevas escrituras. Ver [revisión del release](docs/release-v0.7.1.md).
 
 ### Contexto histórico · 06-Oct
 
@@ -72,8 +71,8 @@ tienen checkpoints aceptados. El runtime, entrega acotada y alias del scheduler
 ya están verificados. La recuperación real exigida para el hito 5 fue
 aceptada el 08-Oct con evidencia productiva y confirmación física posterior.
 Quedan otros errores físicos Samsung y el cierre operacional repetible del
-hito 6, actualmente PAUSADO por prioridad.
-Entrega automática continua sigue fuera de la activación autorizada. La WBS
+hito 6, reanudado por instrucción posterior del propietario. Tres ciclos acotados de recibos están aceptados; adquisición y entrega automáticas siguen pendientes.
+Entrega continua y migración no están activadas; los cambios de código y merge no autorizan por sí solos su activación. La WBS
 no define pesos; el conteo vigente de 5/6 usa seis hitos explícitos. Ver
 `docs/progress-evidence.md`. Bridge no alcanza PASS hasta demostrar el flujo completo:
 
@@ -141,6 +140,9 @@ node --test tests/apps_script_*.test.cjs
 - Preservar `source`, `recorded_at` y el identificador de origen.
 - No sustituir Samsung `uid` por un ID sintético cuando se cierre el gate real.
 - No aumentar progreso por documentación o código no probado en dispositivo.
+- Separar datos crudos y normalizados.
+- Aplicar revisión humana antes de usar recomendaciones de salud.
+
 
 ## Aviso
 
