@@ -4,7 +4,7 @@ Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness*
 
 ## Estado actual
 
-**BUILD · 83.33% · 5/6 hitos verificados · hito 6 PAUSADO por decisión del propietario (08-Oct-2026, 23:21 CDMX).**
+**BUILD · 83.33% · 5/6 hitos verificados · hito 6 reanudado por instrucción del propietario: APK 0.7.1 y aceptación física.**
 
 **Fuente de control:** R-POS Program Registry e Implementation Log en Notion;
 detalle de trazabilidad en [docs/progress-evidence.md](docs/progress-evidence.md).
@@ -29,6 +29,10 @@ puntos de esfuerzo; **no es Bridge PASS**.
   conciliación automática y SA-RPOS-VERTICAL-001 permanecen fuera del PASS.
 - **Foco de desarrollo:** Coach Digital. No reactivar Bridge por esta corrección
   documental; no alterar código, credenciales ni flags.
+
+### Candidato 0.7.1
+
+Se recuperaron el APK firmado0.7.0 y el AAR1.1.0 originales. El commit2cdc7f0 y su texto Kotlin no están disponibles; el hardening propio R-POS se restableció desde el bytecode del APK con procedencia explícita. La corrección de recibos conserva consultas HMAC, backoff persistente y polling visible. Mismo paquete/firma/campos persistidos; sin activación de entrega continua o migración. Instalación y tres ciclos físicos aún pendientes. Ver [revisión del release](docs/release-v0.7.1.md).
 
 ### Contexto histórico · 06-Oct
 

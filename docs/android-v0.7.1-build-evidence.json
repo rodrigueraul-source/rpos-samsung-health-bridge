@@ -1,0 +1,54 @@
+{
+  "artifact": "RPOS-Samsung-Health-Bridge-Delivery-v0.7.1.apk",
+  "apk_bytes": 3901011,
+  "apk_sha256": "15e57656dabd32c03ee585d954479dda9df4a6783bd112f5af7ceb05e13d44c3",
+  "package": "com.rpos.bridge.delivery",
+  "version_code": 8,
+  "version_name": "0.7.1-delivery",
+  "certificate_sha256": "765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3",
+  "apk_signature_v3": true,
+  "zip_alignment_16k": true,
+  "sdk_aar_sha256": "f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654",
+  "original_apk_sha256": "1d927b50bd3bf09ee646b3e5ec937173f49a7d57170efcc21de6e8f20eade616",
+  "original_git_commit_recovered": false,
+  "recovered_behavior": "R-POS-owned 0.7.0 Samsung error mapping, deferred resolution, consent-denied code and UI recovered from signed APK; original Git/Kotlin text unavailable",
+  "android_tests": {
+    "DeliveryRelease": {
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "MockDebug": {
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "python_tests": 46,
+  "apps_script_tests": 209,
+  "persisted_class_fields_match_original": [
+    "delivery/QueueEntry",
+    "delivery/RecoveryCheckpoint",
+    "delivery/BridgeConfig",
+    "delivery/BridgeVault",
+    "model/RposExercise",
+    "model/RposExerciseSession"
+  ],
+  "source_sha256": {
+    "app/build.gradle.kts": "2196813659125c98b675ad91b35bbf0303f5f0eb6e13da894b07cb8724e991c0",
+    "app/src/main/java/com/rpos/bridge/MainActivity.kt": "04b80dd36ac4d9999416323c95e5a2df1364658c065f24bd3fe283f09a69da77",
+    "app/src/main/java/com/rpos/bridge/source/ExerciseReadFailure.kt": "84a40b94a54bb83403c421ea08d298671b4aa83d3f14d5ee5fe84d4bf670c4cc",
+    "app/src/samsung/java/com/rpos/bridge/source/ExerciseReaderProvider.kt": "bb5dbdbc8e40d92993145a1cb784958c0722e57cc56f43e29409457723d0e2bf",
+    "app/src/samsung/java/com/rpos/bridge/source/SamsungReadFailure.kt": "7d540e4c1d70b1fefece9095531ed1148f329b29a18d18e20c57f1e74d1c45dd"
+  },
+  "installed_on_phone": false,
+  "accepted_device_e2e_cycles": 0,
+  "continuous_delivery": "unchanged_off",
+  "migration": "unchanged_off",
+  "bridge_progress": 83.33,
+  "build_source_commit": "6805c7e275c4827940606696c15eb3fefd4648de",
+  "build_source_tree": "e90aa8d40e285cf2763dade8e6de335869df282c"
+}
+

@@ -61,6 +61,40 @@ class BridgeQueue(private val persistence: QueuePersistence, private val transpo
 
     @Synchronized fun hasAttempts(): Boolean = entries().any { it.attempts > 0 }
 
+    /** Read-only polling never uploads a workout or retries a blocked receipt. */
+    @Synchronized fun pollReceipts(config: BridgeConfig, max: Int = 3): String {
+        require(max in 1..3)
+        var current = entries()
+        val due = current.filter { it.recordHash != null &&
+            it.state in setOf("staged", "retry") && it.nextAt <= nowSeconds() }.take(max)
+        for (old in due) {
+            val time = nowSeconds()
+            if (time < 0 || time > Long.MAX_VALUE - 900) throw BridgeFailure("configuration_invalid")
+            val attempt = old.attempts + 1
+            val delay = minOf(900L, 30L * (1L shl minOf(attempt - 1, 5)))
+            val intent = old.update("retry", "acknowledgement_pending", attempt, time + delay)
+            current = current.map { if (it.receiptId == old.receiptId) intent else it }
+            save(current) // Verified durable intent before the identity-only request.
+            val result = try {
+                val body = BridgeProtocol.acknowledgementRequest(old.receiptId, old.recordHash!!,
+                    config.signingKey, time)
+                BridgeProtocol.acknowledgementResponse(transport.post(config.endpoint, body),
+                    old.receiptId, old.recordHash)
+            } catch (e: BridgeFailure) {
+                val retry = e.code in setOf("transport_error", "http_retry", "invalid_response")
+                BridgeProtocol.Receipt(if (retry) "retry" else "blocked", e.code)
+            } catch (_: Exception) { BridgeProtocol.Receipt("retry", "transport_error") }
+            // No canonical journal yet: wait and re-read. Never manufacture an ack
+            // from staging, a screenshot, a timer, or an assisted Notion row.
+            val next = if (result.reason == "unresolved") {
+                intent.update("staged", "notion_pending")
+            } else intent.update(result.state, result.reason)
+            current = current.map { if (it.receiptId == old.receiptId) next else it }
+            save(current)
+        }
+        return summary()
+    }
+
     // An explicit recovery probe reads the sole confirmed receipt; never resets it.
     @Synchronized fun recoveryRecord(receiptId: String? = null): QueueEntry {
         val current = entries()
@@ -78,8 +112,14 @@ class BridgeQueue(private val persistence: QueuePersistence, private val transpo
 
     @Synchronized fun sendDue(config: BridgeConfig, max: Int = 3): String {
         require(max in 1..3)
+        // Existing staged/uncertain receipts with a verified hash only need an ack.
+        // New intake and uncertain intake without a hash remain explicit actions.
+        val polled = entries().count { it.recordHash != null &&
+            it.state in setOf("staged", "retry") && it.nextAt <= nowSeconds() }.coerceAtMost(max)
+        pollReceipts(config, max)
         var current = entries()
-        val due = current.filter { it.state in setOf("queued", "retry", "staged") && it.nextAt <= nowSeconds() }.take(max)
+        val due = current.filter { it.recordHash == null &&
+            it.state in setOf("queued", "retry") && it.nextAt <= nowSeconds() }.take(max - polled)
         for (old in due) {
             val attempt = old.attempts + 1
             val delay = minOf(900L, 30L * (1L shl minOf(attempt - 1, 5)))

@@ -27,11 +27,15 @@ import com.rpos.bridge.delivery.AndroidBridgeRuntime
 import com.rpos.bridge.delivery.BridgeFailure
 import com.rpos.bridge.model.ExerciseSelection
 import com.rpos.bridge.source.ExerciseReaderProvider
+import com.rpos.bridge.source.ExerciseReadFailure
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -47,6 +51,7 @@ class MainActivity : Activity() {
     private lateinit var recoveryButton: Button
     private lateinit var deliveryStatus: TextView
     private var deliveryBusy = false
+    private var receiptPollingJob: Job? = null
     private var selection: ExerciseSelection? = null
     private var selectedRecordJson: String? = null
     private val readScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -178,13 +183,32 @@ class MainActivity : Activity() {
                     }
                 },
                 onFailure = { error ->
-                    status.text = "READ FAIL · ${error::class.java.simpleName}: ${error.message}"
+                    showReadFailure(error)
                 }
             )
             readButton.isEnabled = true
             copyButton.isEnabled = selectedRecordJson != null
             updateSendEnabled()
         }
+    }
+
+    private fun showReadFailure(error: Throwable) {
+        val failure = error as? ExerciseReadFailure
+        status.text = failure?.let { "READ FAIL · ${it.code}\n${it.userMessage}" }
+            ?: "READ FAIL · ${error::class.java.simpleName}\nUnable to read exercises. Tap READ EXERCISE to retry."
+        val resolution = failure?.resolution ?: return
+        AlertDialog.Builder(this)
+            .setTitle("Samsung Health needs attention")
+            .setMessage("${failure.userMessage}\n\nAfter setup, return here and tap READ EXERCISE.")
+            .setNegativeButton("Later", null)
+            .setPositiveButton("Open setup") { _, _ ->
+                try {
+                    resolution()
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    status.text = "READ FAIL · setup_unavailable\nOpen Samsung Health or Android settings manually, then tap READ EXERCISE again."
+                }
+            }.show()
     }
 
     private fun renderSelection(index: Int) {
@@ -216,15 +240,15 @@ class MainActivity : Activity() {
         sendButton.isEnabled = !deliveryBusy && selectedRecordJson != null && ExerciseReaderProvider.SOURCE == "samsung_health"
     }
 
-    private fun deliveryTask(task: (AndroidBridgeRuntime) -> String) {
-        if (deliveryBusy) return
+    private fun deliveryTask(announce: Boolean = true, task: (AndroidBridgeRuntime) -> String): Job? {
+        if (deliveryBusy) return null
         deliveryBusy = true
         updateSendEnabled()
         pendingButton.isEnabled = false
         configureButton.isEnabled = false
         recoveryButton.isEnabled = false
-        deliveryStatus.text = "Checking private receipt state..."
-        readScope.launch {
+        if (announce) deliveryStatus.text = "Checking private receipt state..."
+        return readScope.launch {
             try {
                 deliveryStatus.text = withContext(Dispatchers.IO) { task(AndroidBridgeRuntime.get(this@MainActivity)) }
             } catch (e: CancellationException) { throw e }
@@ -239,6 +263,24 @@ class MainActivity : Activity() {
                 updateSendEnabled()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Foreground acknowledgement reads only: no background acquisition,
+        // workout uploads, delivery activation, or persistent scheduler.
+        receiptPollingJob = readScope.launch {
+            while (isActive) {
+                if (!deliveryBusy) deliveryTask(announce = false) { it.pollPendingReceipts() }?.join()
+                delay(5000)
+            }
+        }
+    }
+
+    override fun onStop() {
+        receiptPollingJob?.cancel()
+        receiptPollingJob = null
+        super.onStop()
     }
 
     private fun sendSelected() {

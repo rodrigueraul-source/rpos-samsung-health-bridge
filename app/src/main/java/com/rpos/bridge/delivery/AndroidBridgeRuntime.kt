@@ -99,6 +99,12 @@ class AndroidBridgeRuntime private constructor(context: Context) {
     }, AppsScriptTransport(), { System.currentTimeMillis() / 1000 })
 
     @Synchronized fun summary(): String = queue.summary() + recovery.summary()
+    @Synchronized fun pollPendingReceipts(): String {
+        val config = config() ?: return summary()
+        return if (recovery.active()) recovery.resume(config) else {
+            queue.pollReceipts(config, max = 3) + recovery.summary()
+        }
+    }
     @Synchronized fun checkPending(): String {
         val config = config() ?: throw BridgeFailure("not_configured")
         return if (recovery.active()) recovery.resume(config) else {
