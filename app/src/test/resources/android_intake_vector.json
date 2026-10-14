@@ -1,0 +1,8 @@
+{
+  "synthetic_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sent_at": 1800000000,
+  "payload_json": "{\"schema_version\":\"rpos.exercise.export.v1\",\"source\":\"samsung_health\",\"sdk_version\":\"1.1.0\",\"read_at\":\"2026-01-03T15:00:00.123Z\",\"read_record_count\":1,\"record\":{\"uid\":\"synthetic-android-001\",\"start_time\":\"2026-01-03T12:00:00.123Z\",\"end_time\":\"2026-01-03T13:00:00.456Z\",\"exercise_type\":\"OTHER\",\"custom_title\":\"Prueba 😀\",\"duration_seconds\":null,\"calories_kcal\":null,\"distance_meters\":null,\"sessions\":[]}}",
+  "payload_sha256": "d33c0287690e705f0e4c4a3c23394763d0ce21db601f47d65860500a9624f7ce",
+  "signature": "e772ec8a4b741e0ad51712e3ab97d94f2f40a5b6af3f6c8d3dd746b597433104",
+  "receipt_id": "db2b0f145dcb3080d5598fef4f5b3d6a469f5cdccafa2e4c30fa4bce9ef8aacb"
+}

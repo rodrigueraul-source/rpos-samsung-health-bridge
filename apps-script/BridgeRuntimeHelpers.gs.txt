@@ -1,0 +1,17 @@
+/* Repair only the two reviewed missing runtime helpers.
+ * Add as BridgeRuntimeHelpers.gs in the EXISTING Apps Script project.
+ * Excluded from the seven-module bundle: remove this repair file before
+ * reinstalling the complete bundle, which already contains both functions.
+ */
+function rposBridgeSha_(text) {
+  return rposBridgeHex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
+    text, Utilities.Charset.UTF_8));
+}
+
+function rposBridgeUuid_(value) {
+  if (typeof value !== 'string' || !/^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$/i.test(value)) {
+    rposBridgeFailure_('delivery_conflict');
+  }
+  const s = value.replace(/-/g, '').toLowerCase();
+  return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);
+}

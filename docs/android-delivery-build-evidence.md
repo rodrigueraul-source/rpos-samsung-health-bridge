@@ -1,0 +1,137 @@
+# Samsung delivery APK evidence
+
+## Current v0.6 recovery update
+
+The same delivery signing key was recovered from its retained private backup.
+The new release matches the installed v0.5 package and certificate:
+
+- `com.rpos.bridge.delivery`, code 6, `0.6.0-delivery`
+- APK `RPOS-Samsung-Health-Bridge-Delivery-v0.6.0.apk`, 3,901,210 bytes
+- APK SHA256 `54ddc5e5603fe9f5a807f992f3cdb2e232ddd7bd5da3f70746ed8bb4d46360eb`
+- Certificate SHA256 `765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3`
+- APK verification and 16 KiB alignment PASS; no embedded endpoint, credentials
+  or real Exercise record; SDK AAR hash unchanged from the historical build
+- Actual Gradle `testMockDebugUnitTest` and `assembleDeliveryRelease` passed;
+  41 unit cases, zero failures/errors/skips, release lint-vital PASS
+- 169 Apps Script tests PASS; reproducible runtime and diff checks PASS
+- Replacing only the marked Endpoint module reproduces the complete tested
+  bundle; the other six runtime modules are byte-unchanged
+
+Toolchain coordinates remain Gradle 8.13 / AGP 8.13.2 / Kotlin 2.3.20 / JDK
+17.0.20 / SDK36 / build-tools36. Environment restoration recovered the complete
+verified Gradle compiler jar, JDK compiler and correct proxy routing; no source
+or dependency downgrade was used. Remote CI must be checked separately.
+
+The new test is a read-only receipt query with a separate encrypted checkpoint
+and deliberate discard of the first validated real confirmation. It requires
+the existing Google deployment update, same-package phone update and physical
+checkpoint/reboot/recheck. It is not proof of a natural outage or interrupted
+Notion write. BUILD remains 66.67%, 4/6; delivery/migration stay OFF.
+
+Machine-readable artifact/bundle hashes are in `android-recovery-build-evidence.json`.
+
+## Historical v0.5 build — 06-Oct-2026
+
+The owner approved the Android SDK license at 09:47 America/Mexico_City.
+The required android-sdk-license was accepted; platform 36, build-tools
+36.0.0 and platform-tools installed. The initial runtime had Java without
+javac. A matching Ubuntu OpenJDK 17.0.20 JDK was recovered from the configured
+Ubuntu snapshot package source and assembled locally with the same-version JRE.
+No project dependency versions were downgraded.
+
+## Source/build boundary
+
+A `delivery` flavor reuses the existing Samsung provider and SDK AAR and adds
+only a separate application ID and app label. The original `samsung` and mock
+flavors remain available. Local Gradle 8.13, AGP 8.13.2, Kotlin 2.3.20,
+JDK 17.0.20, compile/target SDK 36 and minimum SDK 29 were used. An environment
+init script limited the Google repository to Android groups; Kotlin/JUnit were
+resolved from publisher Maven Central. It changes repository routing only, not
+source or dependency coordinates.
+
+`assembleSamsungRelease`, `assembleDeliveryRelease` and
+`testDeliveryReleaseUnitTest`: **BUILD SUCCESSFUL**, 1m44s.
+The 29 actual Android Gradle unit cases passed with zero failures/errors/skips.
+Release lint-vital tasks passed for both real flavors. This compiles
+MainActivity, AndroidBridgeRuntime and the real Samsung provider; it is separate
+from the earlier host-only JVM tests and mock CI.
+
+SDK AAR SHA256: `f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654`.
+
+## Signed artifact
+
+- File: `RPOS-Samsung-Health-Bridge-Delivery-v0.5.0.apk`
+- Package: `com.rpos.bridge.delivery`
+- Label: **R-POS Bridge Envío**
+- Version code/name: **5 / 0.5.0-delivery**
+- Size: **3884826 bytes**
+- APK SHA256: `0c93f37deaa7f953fd8e65f6b1a1007faa1ae88cdcc5d970885f6d9e4f1ee6af`
+- Certificate SHA256: `765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3`
+- RSA 4096, dedicated PKCS12 key, APK signature v3 verification PASS
+- 16 KiB zip alignment check PASS; non-debuggable release
+- Merged manifest has INTERNET and TLS-only transport; backup disabled
+- Compiled provider is Samsung with source samsung_health; SDK classes present
+- No deployment ID or private signing password embedded
+
+The private signing key/password/certificate recovery package is retained
+privately outside Git. It is a dedicated app-signing key, not the HMAC, Notion
+token or Google password. The old v0.4 APK public certificate SHA256 is
+`f23af18e8802e5c19aa80ccc2b6ff65e1d92876b33d3a576f74c6daba4fa409c`.
+The original private key was not found in reviewed workspace/tmp/Android/Gradle
+locations or signing filename searches. The new package coexists with the old
+app. No old app uninstall, data clearing, private queue extraction or migration
+was performed. Future delivery-package updates must retain the new key.
+
+## Historical backend checkpoint and gates at the v0.5 build
+
+Web app version 1 was published at 09:40 with explicit owner approval at 09:33:
+execute as owner, anonymous access, endpoint initially OFF. External empty POST
+returned HTTP200/application-json/receipt.v1/status disabled/retryable false.
+Four activation flags OFF were directly verified at 09:38; scheduler legacy.
+Owner readiness audit 09:22 passed: two receipts, two confirmed migration
+journals, fourteen aliases; no delivery/scheduler journals. The complete saved runtime was subsequently copied using the editor-indicated
+Command shortcut: **66,136 bytes / SHA256
+270c4df00594028cf7104a0812a1792179c8821322d24c7eb1bb800ee72f707b**,
+exactly equal to the repository bundle (including its final newline).
+Earlier one-line exports used the wrong editor modifier and are superseded.
+
+Read-only live trigger inventory at the current checkpoint: six existing
+owner time triggers, four Fitness and two Mental Drop, all show 0% errors.
+No Bridge delivery trigger or new trigger was added. Drive receipt-folder
+metadata lists owner-only access and shared=false, with the personal Drive
+root as its parent; no explicit group/domain/anyone permission returned. This
+is metadata evidence, not a complete independent effective-access attestation.
+Writers outside this Apps Script project remain unverified.
+
+Phone screenshots supplied06-Oct10:54 show the delivery interface, Exercise
+READ consent and actual selection from89records with11segments; queue empty.
+Installation/READ accepted in the delivered-APK context. The cropped header
+does not independently identify package/version. Private configuration,
+authenticated staging, reviewed backend activation/scheduler cutover, signed
+Notion delivery, queue restart and uncertain-result recovery remain open.
+Accepted v0.4 acquisition checkpoints remain valid and are not repeated.
+Neither release automatically reads or uploads in the background. BUILD35
+remains the approved Registry baseline; this build does not establish Bridge
+PASS, BR05/BR06 closure or an 80% completion claim.
+
+## Historical wrapper and source verification before cutover
+
+Saved Código.gs was copied for private static review: **40,432 bytes / SHA256
+ea3e36898ec4d35896387ef478730b2dae5ef00223343284d6a08ce3b9195086**.
+There is one createGymCapturePage_ definition and one
+rposBridgeLegacyCreateGymCapturePage_ definition. The wrapper contains only
+the exact legacy return with cfg/event/plan/now; the live Fitness source matches
+the expected source. V8 syntax compilation without execution passes for both
+files. A column-zero function-declaration scan finds 42 scheduler and 43 runtime
+names, with zero shared names. Recorded entry callers are weekday/Saturday
+capture plus two existing test operators. No scheduler operator was executed
+and no notification, trigger, flag, receipt or Notion data write was performed.
+
+Source commit ca91da4d5fa0ceddcdae9ca40529fcbf176dc0e6 has
+**Validate MVP #82 SUCCESS** and **Android Mock Build #59 SUCCESS**.
+This final documentation checkpoint may have a later commit SHA; APK-producing
+application sources are unchanged. Full saved-source comparison and wrapper
+review are complete; cutover is still OFF/legacy and awaits the physical pilot
+window/private device setup. The saved-head comparison is not an independent
+export of Google's version1 deployment snapshot. External editors/writers
+remain outside this source-review scope.

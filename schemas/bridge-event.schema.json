@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://r-pos.local/schemas/bridge-event.schema.json",
+  "title": "R-POS Samsung Health Bridge Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "source_record_id",
+    "recorded_at",
+    "metric_type",
+    "objective"
+  ],
+  "properties": {
+    "source": {
+      "const": "samsung_health"
+    },
+    "source_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metric_type": {
+      "const": "exercise"
+    },
+    "objective": {
+      "type": "object"
+    }
+  }
+}
