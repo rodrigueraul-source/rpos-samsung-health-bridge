@@ -1,6 +1,7 @@
 package com.rpos.bridge.source
 
 import android.app.Activity
+import android.content.Context
 import com.rpos.bridge.model.RposExercise
 import com.rpos.bridge.model.RposExerciseSession
 import com.samsung.android.sdk.health.data.HealthDataService
@@ -15,11 +16,13 @@ import java.time.LocalDateTime
 
 object ExerciseReaderProvider {
     const val SOURCE = "samsung_health"
-    fun create(activity: Activity): ExerciseReader = SamsungExerciseReader(activity)
+    fun create(activity: Activity): ExerciseReader = SamsungExerciseReader(activity.applicationContext, activity)
+    fun createBackground(context: Context): ExerciseReader = SamsungExerciseReader(context.applicationContext, null)
 }
 
 private class SamsungExerciseReader(
-    private val activity: Activity
+    private val context: Context,
+    private val activity: Activity?
 ) : ExerciseReader {
 
     override suspend fun readRecentExercises(days: Long): List<RposExercise> {
@@ -28,7 +31,7 @@ private class SamsungExerciseReader(
             readExercises(days)
         } catch (error: HealthDataException) {
             val resolution: (() -> Unit)? = if (
-                error is ResolvablePlatformException && error.hasResolution
+                activity != null && error is ResolvablePlatformException && error.hasResolution
             ) {
                 { error.resolve(activity) }
             } else null
@@ -37,12 +40,12 @@ private class SamsungExerciseReader(
     }
 
     private suspend fun readExercises(days: Long): List<RposExercise> {
-        val store = HealthDataService.getStore(activity.applicationContext)
+        val store = HealthDataService.getStore(context)
         val exerciseRead = Permission.of(DataTypes.EXERCISE, AccessType.READ)
         val requiredPermissions = setOf(exerciseRead)
 
         var granted = store.getGrantedPermissions(requiredPermissions)
-        if (!granted.containsAll(requiredPermissions)) {
+        if (!granted.containsAll(requiredPermissions) && activity != null) {
             granted = store.requestPermissions(requiredPermissions, activity)
         }
         if (!granted.containsAll(requiredPermissions)) {

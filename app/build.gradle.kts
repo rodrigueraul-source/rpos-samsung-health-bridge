@@ -14,8 +14,8 @@ android {
         applicationId = "com.rpos.bridge"
         minSdk = 29
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.7.1"
+        versionCode = 9
+        versionName = "0.8.0"
     }
 
     flavorDimensions += "healthSource"

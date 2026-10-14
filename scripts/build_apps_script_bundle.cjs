@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const names = ['BridgeIntake.gs', 'BridgeEndpoint.gs', 'BridgeDelivery.gs',
-  'BridgeNotion.gs', 'BridgeScheduler.gs', 'BridgeMigration.gs', 'BridgeDiagnostics.gs'];
+  'BridgeNotion.gs', 'BridgeAutomatic.gs', 'BridgeScheduler.gs', 'BridgeMigration.gs', 'BridgeDiagnostics.gs'];
 const output = path.join(root, 'apps-script', 'BridgeRuntime.gs.txt');
 const endpointRepair = path.join(root, 'apps-script', 'BridgeEndpoint-ReceiptRead-Repair.txt');
 const endpointText = '// BEGIN BridgeEndpoint.gs\n' +
@@ -28,7 +28,7 @@ if (process.argv.includes('--check')) {
   if (!fs.existsSync(endpointRepair) || fs.readFileSync(endpointRepair, 'utf8') !== endpointText) {
     throw new Error('Stale receipt-read Endpoint repair');
   }
-  console.log('Bundle matches seven modules; syntax/global entries/load without side effects PASS');
+  console.log('Bundle matches eight modules; syntax/global entries/load without side effects PASS');
 } else {
   fs.writeFileSync(output, text);
   fs.writeFileSync(endpointRepair, endpointText);

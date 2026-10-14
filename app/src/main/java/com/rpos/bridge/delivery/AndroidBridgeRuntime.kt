@@ -6,6 +6,8 @@ import android.security.keystore.KeyProperties
 import android.util.AtomicFile
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import com.rpos.bridge.model.RposExercise
+import java.time.Instant
 import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.KeyStore
@@ -98,7 +100,54 @@ class AndroidBridgeRuntime private constructor(context: Context) {
             gson.toJson(mapOf("schema_version" to "rpos.android.recovery.v1", "checkpoint" to value)))
     }, AppsScriptTransport(), { System.currentTimeMillis() / 1000 })
 
-    @Synchronized fun summary(): String = queue.summary() + recovery.summary()
+    @Synchronized fun automaticPolicy(): AutomaticPolicy? = vault.read("bridge-automatic.enc")?.let {
+        try {
+            val e = com.google.gson.JsonParser.parseString(it).asJsonObject
+            if (e.get("schema_version")?.asString != "rpos.android.automatic.v1") throw BridgeFailure("automatic_storage_error")
+            val p = e.getAsJsonObject("policy") ?: throw BridgeFailure("automatic_storage_error")
+            if (p.keySet() != setOf("enabled", "startAt", "baselineUids", "lastResult") ||
+                p.get("enabled")?.isJsonPrimitive != true || !p.get("enabled").asJsonPrimitive.isBoolean ||
+                p.get("startAt")?.isJsonPrimitive != true || !p.get("startAt").asJsonPrimitive.isString ||
+                p.get("lastResult")?.isJsonPrimitive != true || !p.get("lastResult").asJsonPrimitive.isString ||
+                p.get("baselineUids")?.isJsonArray != true || p.getAsJsonArray("baselineUids").any {
+                    !it.isJsonPrimitive || !it.asJsonPrimitive.isString || it.asString.isBlank()
+                }) throw BridgeFailure("automatic_storage_error")
+            Instant.parse(p.get("startAt").asString)
+            if (p.getAsJsonArray("baselineUids").size() > 1000 ||
+                p.getAsJsonArray("baselineUids").map { it.asString }.distinct().size != p.getAsJsonArray("baselineUids").size())
+                throw BridgeFailure("automatic_storage_error")
+            gson.fromJson(p, AutomaticPolicy::class.java)
+                ?: throw BridgeFailure("automatic_storage_error")
+        } catch (_: Exception) { throw BridgeFailure("automatic_storage_error") }
+    }
+    private fun saveAutomatic(p: AutomaticPolicy) = vault.write("bridge-automatic.enc",
+        gson.toJson(mapOf("schema_version" to "rpos.android.automatic.v1", "policy" to p)))
+    @Synchronized fun enableAutomatic(records: List<RposExercise>, now: Instant) {
+        if (config() == null) throw BridgeFailure("not_configured")
+        if (recovery.active()) throw BridgeFailure("recovery_pending")
+        val existing = automaticPolicy()
+        saveAutomatic(existing?.copy(enabled = true) ?: AutomaticAcquisition.baseline(records, now))
+    }
+    @Synchronized fun pauseAutomatic() { automaticPolicy()?.let { saveAutomatic(it.copy(enabled = false)) } }
+    @Synchronized fun automaticResult(reason: String) {
+        val safe = setOf("ready", "completed", "automatic_read_failed", "queue_full", "record_changed",
+            "automatic_record_invalid", "automatic_storage_error", "not_configured", "recovery_pending")
+        automaticPolicy()?.let { saveAutomatic(it.copy(lastResult = if (reason in safe) reason else "automatic_read_failed")) }
+    }
+    @Synchronized fun synchronizeAutomatic(records: List<RposExercise>, now: Instant): String {
+        val p = automaticPolicy() ?: return summary()
+        if (!p.enabled) return summary()
+        val cfg = config() ?: throw BridgeFailure("not_configured")
+        if (recovery.active()) throw BridgeFailure("recovery_pending")
+        AutomaticAcquisition.payloads(p, records, now).forEach { queue.enqueue(it) }
+        // The existing durable queue guards duplicate/changed records and uncertain RPCs.
+        queue.sendDue(cfg, max = 3)
+        automaticResult("completed")
+        return summary()
+    }
+    @Synchronized fun summary(): String = queue.summary() + recovery.summary() +
+        (automaticPolicy()?.let { " · automatic: " + (if (it.enabled) "ON" else "paused") + " / " + it.lastResult }
+            ?: " · automatic: OFF")
     @Synchronized fun pollPendingReceipts(): String {
         val config = config() ?: return summary()
         return if (recovery.active()) recovery.resume(config) else {
