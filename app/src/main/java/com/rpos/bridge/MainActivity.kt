@@ -25,6 +25,8 @@ import android.widget.EditText
 import android.widget.ScrollView
 import com.rpos.bridge.delivery.AndroidBridgeRuntime
 import com.rpos.bridge.delivery.AutomaticSyncJob
+import com.rpos.bridge.delivery.AutomaticSetupFailure
+import com.rpos.bridge.delivery.AutomaticSetupStage
 import com.rpos.bridge.delivery.BridgeFailure
 import com.rpos.bridge.model.ExerciseSelection
 import com.rpos.bridge.source.ExerciseReaderProvider
@@ -324,28 +326,38 @@ class MainActivity : Activity() {
                     if (deliveryBusy || exerciseReadBusy) return@launch
                     deliveryBusy = true; updateActionsEnabled()
                     deliveryStatus.text = "AUTOMATIC · preparing Samsung baseline (up to 2 minutes) · activation unchanged"
+                    var stage = AutomaticSetupStage.READ
                     try {
                         val records = withTimeout(120000) {
                             ExerciseReaderProvider.create(this@MainActivity).readRecentExercises(30)
                         }
                         deliveryStatus.text = withContext(Dispatchers.IO) {
                             val runtime = AndroidBridgeRuntime.get(this@MainActivity)
+                            stage = AutomaticSetupStage.POLICY
                             runtime.enableAutomatic(records, Instant.now())
+                            stage = AutomaticSetupStage.SCHEDULE
                             try { AutomaticSyncJob.schedule(this@MainActivity) }
                             catch (e: Exception) { runtime.pauseAutomatic(); throw e }
                             runtime.summary()
                         }
                     } catch (e: TimeoutCancellationException) {
-                        deliveryStatus.text = "AUTOMATIC · read_timeout · activation unchanged · receipts retained"
+                        showAutomaticSetupFailure("read_timeout")
                     } catch (e: CancellationException) { throw e }
                     catch (e: Exception) {
-                        deliveryStatus.text = "AUTOMATIC · " +
-                            (if (e is BridgeFailure) e.code else "read_or_setup_failed") + " · receipts retained"
+                        showAutomaticSetupFailure(AutomaticSetupFailure.code(stage, e))
                     } finally {
                         deliveryBusy = false; updateActionsEnabled()
                     }
                 }
             }.show()
+    }
+
+    private fun showAutomaticSetupFailure(code: String) {
+        deliveryStatus.text = "AUTOMATIC · $code · receipts retained"
+        // Foreground receipt polling may refresh the status line; retain the failure until acknowledged.
+        AlertDialog.Builder(this).setTitle("Automatic sync needs attention")
+            .setMessage("Automatic setup could not finish.\nCode: $code\n\nExisting workouts and receipts are retained. Capture this message before closing it.")
+            .setPositiveButton("OK", null).show()
     }
 
     private fun configureDelivery() {
