@@ -1,0 +1,78 @@
+/* Owner-only read audit for pending future receipts. No delivery, retry, property,
+ * trigger, Drive or Notion writes. No raw error, token or workout content output. */
+function rposBridgeAutomaticAudit_(deps) {
+  const report = {schema_version:'rpos.bridge.automatic.audit.v1',status:'review_required',
+    read_only:true,receipts:[],properties_unchanged:false};
+  let locked=false;
+  function snapshot() { const all=deps.props.getProperties(); return JSON.stringify(Object.keys(all).sort().map(function(k){return [k,all[k]];})); }
+  const before=snapshot();
+  try {
+    locked=deps.lock.tryLock(1000); if(!locked){report.status='busy';return report;}
+    const all=deps.props.getProperties();
+    if(all.BRIDGE_INTAKE_ENABLED!=='true'||all.BRIDGE_SCHEDULER_BINDING_REVIEWED!=='true'||
+      all.BRIDGE_AUTOMATIC_ENABLED!=='true'||all.BRIDGE_DELIVERY_ENABLED!=='true'||
+      all.BRIDGE_MIGRATION_ENABLED!=='false'||all.BRIDGE_AUTOMATIC_MODE!=='pilot'||
+      all.BRIDGE_AUTOMATIC_MAX_NEW!=='3'||!deps.bindingMatches(all.BRIDGE_FITNESS_DATA_SOURCE_ID)) return report;
+    const cutoff=deps.time(all.BRIDGE_AUTOMATIC_START_AT);
+    const keys=Object.keys(all).filter(function(k){return /^RPOS_BRIDGE_INTENT_[a-f0-9]{64}$/.test(k);});
+    if(keys.length>1000)return report;
+    const pending=keys.filter(function(k){const raw=all['RPOS_BRIDGE_DELIVERY_'+k.slice('RPOS_BRIDGE_INTENT_'.length)];return !raw||JSON.parse(raw).state!=='confirmed';});
+    if(pending.length>10){report.status='audit_incomplete';return report;}
+    for(let i=0;i<pending.length;i++){
+      const id=pending[i].slice('RPOS_BRIDGE_INTENT_'.length),found=deps.store.find(id);
+      if(found.length!==1){report.status='storage_requires_review';return report;}
+      const stored=found[0].value;
+      deps.verify(stored,id,stored.record_hash);
+      if(deps.time(stored.export.record.start_time)<cutoff)continue;
+      if(report.receipts.length>=3){report.status='audit_incomplete';return report;}
+      const intake=JSON.parse(all[pending[i]]),r={receipt_id:id,record_hash:stored.record_hash,
+        delivery_state:null,retry_state:null,retry_attempts:null,steps:[],status:'read_error'};
+      report.receipts.push(r);
+      if(intake.state!=='staged'||intake.receipt_id!==id||intake.record_hash!==stored.record_hash||intake.file_id!==found[0].id){r.status='storage_requires_review';continue;}
+      const delivery=all['RPOS_BRIDGE_DELIVERY_'+id];if(delivery)r.delivery_state=JSON.parse(delivery).state;
+      const retry=all['RPOS_BRIDGE_AUTOMATIC_RETRY_'+id];if(retry){const v=JSON.parse(retry);r.retry_state=v.state;r.retry_attempts=v.attempts;}
+      try{deps.inspect(stored,r);r.status='read_checks_pass';}
+      catch(ignore){r.status=r.steps.some(function(s){return s.http_status!=null&&(s.http_status<200||s.http_status>=300);})?'notion_http_error':'read_error';}
+    }
+    report.status=report.receipts.length?'audited':'no_pending_future_receipt';
+  }catch(ignore){report.status='audit_incomplete';}
+  finally{report.properties_unchanged=before===snapshot();if(locked){try{deps.lock.releaseLock();}catch(ignore){}}}
+  return report;
+}
+
+function rposBridgeInspectPendingAutomatic() {
+  const props=PropertiesService.getScriptProperties();
+  let calls=0;
+  const result=rposBridgeAutomaticAudit_({props:props,lock:LockService.getScriptLock(),
+    time:rposBridgeTime_,bindingMatches:function(id){return typeof RPOS!=='undefined'&&rposBridgeUuid_(id)===rposBridgeUuid_(RPOS.fitnessDataSourceId);},
+    store:{find:function(id){return rposBridgeDriveStore_(props.getProperty('BRIDGE_RECEIPT_FOLDER_ID'),props).find(id);}},
+    verify:function(stored,id,hash){rposBridgeVerifyStored_(stored,id,hash,{sha256:rposBridgeSha_});},
+    inspect:function(stored,entry){
+      const source=rposBridgeUuid_(props.getProperty('BRIDGE_FITNESS_DATA_SOURCE_ID'));
+      function read(stage,method,path,body){
+        if(++calls>18||(method!=='GET'&&!(method==='POST'&&path==='/data_sources/'+source+'/query'))||
+          !/^\/(?:data_sources|pages|blocks)\//.test(path)||/\/\/|#/.test(path))throw new Error('read_only');
+        const step={stage:stage,http_status:null};entry.steps.push(step);
+        const options={method:method.toLowerCase(),muteHttpExceptions:true,followRedirects:false,
+          headers:{Authorization:'Bearer '+props.getProperty('NOTION_TOKEN'),'Notion-Version':'2026-03-11'},contentType:'application/json'};
+        if(body!==undefined)options.payload=JSON.stringify(body);
+        const response=UrlFetchApp.fetch('https://api.notion.com/v1'+path,options);
+        step.http_status=response.getResponseCode();
+        const raw=response.getContentText();if(Utilities.newBlob(raw).getBytes().length>8000000)throw new Error('bounded');
+        const data=JSON.parse(raw);
+        if(step.http_status<200||step.http_status>=300){
+          const safe=['invalid_json','invalid_request_url','invalid_request','validation_error','missing_version','unauthorized','restricted_resource','object_not_found','conflict_error','rate_limited','internal_server_error','bad_gateway','service_unavailable','database_connection_unavailable'];
+          step.notion_code=safe.indexOf(data.code)>=0?data.code:'unclassified';throw new Error('http');
+        }
+        return data;
+      }
+      const ds=read('data_source','GET','/data_sources/'+source);
+      entry.required_schema_matches=!!ds.properties&&Object.keys({Session:'title',Source:'rich_text','Source Record ID':'rich_text',Date:'date',Notes:'rich_text','Capture State':'select','Activity Type':'select'}).every(function(k){return ds.properties[k]&&ds.properties[k].type===({Session:'title',Source:'rich_text','Source Record ID':'rich_text',Date:'date',Notes:'rich_text','Capture State':'select','Activity Type':'select'})[k];});
+      const uid=stored.export.record.uid;
+      const matches=read('uid_query','POST','/data_sources/'+source+'/query',{filter:{property:'Source Record ID',rich_text:{equals:uid}},page_size:100});
+      entry.uid_matches=Array.isArray(matches.results)?matches.results.length:null;entry.uid_query_complete=matches.has_more===false;
+      const aliases=read('alias_query','POST','/data_sources/'+source+'/query',{filter:{property:'Notes',rich_text:{contains:rposBridgeAlias_('samsung_health',uid,rposBridgeSha_)}},page_size:100});
+      entry.alias_candidates=Array.isArray(aliases.results)?aliases.results.length:null;entry.alias_query_complete=aliases.has_more===false;
+    }});
+  Logger.log(JSON.stringify(result));return result;
+}
