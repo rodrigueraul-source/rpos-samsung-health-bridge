@@ -120,10 +120,17 @@ function rposBridgeAutomaticPort_(http, sourceId, sha) {
     findCandidates: function(record) {
       const d = day(record);
       // Date/activity only block creation; they NEVER select or patch a destination.
-      return query({and: [{or: [{property: 'Date', date: {equals: d.local}},
-        {and: [{property: 'Date', date: {on_or_after: d.start}}, {property: 'Date', date: {before: d.end}}]}]},
-        {or: [{property: 'Activity Type', select: {equals: rposBridgeAutoActivity_(record)}},
-          {property: 'Activity Type', select: {is_empty: true}}]}]}).filter(function(id) {
+      // Notion permits only two compound-filter levels. Expand the date/activity
+      // alternatives into OR-of-AND branches without changing the blocker set.
+      const dates = [[{property:'Date',date:{equals:d.local}}],
+        [{property:'Date',date:{on_or_after:d.start}},{property:'Date',date:{before:d.end}}]];
+      const activities = [{property:'Activity Type',select:{equals:rposBridgeAutoActivity_(record)}},
+        {property:'Activity Type',select:{is_empty:true}}];
+      const branches = [];
+      dates.forEach(function(date) { activities.forEach(function(activity) {
+        branches.push({and:date.concat([activity])});
+      }); });
+      return query({or:branches}).filter(function(id) {
         const p = base.read(id), other = p.evidence && p.evidence.record;
         // A distinct canonical UID with a verified, disjoint SDK interval is another
         // real workout, not an ambiguous planned/manual row. Never patch either one.

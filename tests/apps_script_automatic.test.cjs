@@ -117,6 +117,20 @@ test('date/activity guard includes local date-only rows and UTC midnight span; n
   assert.ok(q.includes('2026-01-01'));assert.ok(q.includes('2026-01-01T06:00:00.000Z'));assert.ok(q.includes('2026-01-02T06:00:00.000Z'));
   assert.ok(q.includes('Swimming'));assert.ok(q.includes('is_empty'));assert.ok(!q.includes('Session'));
 });
+test('candidate query obeys Notion depth limit and preserves every date/activity truth combination',()=>{
+  const f=fixture();let filter;
+  function depth(v){if(v.and||v.or)return 1+Math.max(...(v.and||v.or).map(depth));return 0;}
+  const port=f.c.rposBridgeAutomaticPort_({request:(_,__,b)=>{
+    assert.ok(depth(b.filter)<=2,'Notion rejects deeper compound filters with 400 validation_error');
+    filter=clone(b.filter);return {object:'list',results:[],has_more:false};
+  }},DS,sha);
+  assert.deepEqual(clone(port.findCandidates(f.exp.record)),[]);
+  function evaluate(v,bits){if(v.and)return v.and.every(x=>evaluate(x,bits));if(v.or)return v.or.some(x=>evaluate(x,bits));
+    if(v.property==='Date')return bits['equals'in v.date?0:'on_or_after'in v.date?1:2];
+    return bits['equals'in v.select?3:4];}
+  for(let mask=0;mask<32;mask++){const b=Array.from({length:5},(_,i)=>!!(mask&(1<<i)));
+    assert.equal(evaluate(filter,b),(b[0]||(b[1]&&b[2]))&&(b[3]||b[4]),'same blockers for combination '+mask);}
+});
 test('schema mismatch or missing zone refuses automatic page; no silent selection creation',()=>{
   const f=fixture(),s=schema();s.properties['Capture State'].select.options=[];
   const p=f.c.rposBridgeAutomaticPort_({request:()=>s},DS,sha);
