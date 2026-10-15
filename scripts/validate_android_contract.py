@@ -6,6 +6,7 @@ the architectural contract that can be checked without proprietary binaries.
 """
 
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,16 @@ REQUIRED_FILES = [
 SAMSUNG_READER = REQUIRED_FILES[6]
 BUILD_FILE = ROOT / "app" / "build.gradle.kts"
 GITIGNORE = ROOT / ".gitignore"
+
+
+def validate_job_permissions(manifest: str) -> None:
+    """Network-constrained persisted jobs must be schedulable on API 34+."""
+    android_name = "{http://schemas.android.com/apk/res/android}name"
+    permissions = {node.get(android_name) for node in ET.fromstring(manifest).findall("uses-permission")}
+    required = {"android.permission.ACCESS_NETWORK_STATE", "android.permission.RECEIVE_BOOT_COMPLETED"}
+    missing = required - permissions
+    if missing:
+        raise ValueError(f"Automatic job permissions missing: {sorted(missing)}")
 
 
 def validate_android_contract() -> None:
@@ -65,6 +76,7 @@ def validate_android_contract() -> None:
         if not (delivery / name).exists():
             raise ValueError(f"Missing delivery implementation: {name}")
     manifest = (ROOT / "app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+    validate_job_permissions(manifest)
     if 'android.permission.INTERNET' not in manifest or 'android:usesCleartextTraffic="false"' not in manifest:
         raise ValueError("Delivery must use explicit network permission and TLS-only transport")
     runtime = (delivery / "AndroidBridgeRuntime.kt").read_text(encoding="utf-8")
