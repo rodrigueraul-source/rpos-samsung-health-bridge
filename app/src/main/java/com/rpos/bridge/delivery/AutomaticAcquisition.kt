@@ -10,6 +10,21 @@ data class AutomaticPolicy(val enabled: Boolean, val startAt: String,
                            val baselineUids: List<String>, val lastResult: String = "ready")
 
 object AutomaticAcquisition {
+    /** Preserve the first queued export while still advancing unrelated records and ACKs. */
+    fun synchronize(queue: BridgeQueue, config: BridgeConfig, payloads: List<String>): String {
+        var changed = false
+        payloads.forEach { payload ->
+            try { queue.enqueue(payload) }
+            catch (error: BridgeFailure) {
+                if (error.code != "record_changed") throw error
+                // A newer SDK version under this UID requires review, never replacement.
+                changed = true
+            }
+        }
+        queue.sendDue(config, max = 3)
+        return if (changed) "completed_with_record_changes" else "completed"
+    }
+
     fun baseline(records: List<RposExercise>, now: Instant): AutomaticPolicy {
         ExerciseSelection(records, "samsung_health", now.toString()) // Validate original identities.
         if (records.size > 1000) throw BridgeFailure("automatic_baseline_too_large")
