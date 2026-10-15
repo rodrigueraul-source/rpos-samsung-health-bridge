@@ -106,6 +106,128 @@ function fixture({withoutDeliveryModule = true} = {}) {
     runNative: () => clone(c.rposBridgeFinalizeCanonicalReceipt())};
 }
 
+function historicalFixture() {
+  const f = fixture();
+  vm.runInContext(fs.readFileSync(path.join(__dirname,
+    '../apps-script/BridgeHistoricalReview.gs.txt'), 'utf8'), f.c);
+  const r = f.stored.export.record;
+  r.exercise_type = 'POOL_SWIMMING';
+  r.sessions = [Object.assign({}, r.sessions[0], {exercise_type:'POOL_SWIMMING'})];
+  f.stored.record_hash = sha(JSON.stringify(f.c.rposBridgeCanonical_(r)));
+  f.state.blocks[0].code.rich_text = rich(JSON.stringify(f.stored.export));
+  const alias = {source:'samsung_health_screenshot', uid:'synthetic-old-screenshot',
+    date:{start:'2026-01-03'}};
+  f.state.notes = rich('Original 472 kcal retained\n' +
+    f.c.rposBridgeAlias_(alias.source, alias.uid, sha) + '\n' + JSON.stringify(alias));
+  const selection = {schema_version:'rpos.bridge.historical.selection.v1',
+    receipt_id:f.stored.receipt_id, record_hash:f.stored.record_hash, uid:r.uid,
+    target_page_id:PAGE, expected_last_edited_time:f.state.edited, aliases:[alias],
+    review_basis:'Owner reviewed original start, distance, active duration, heart rate and retained screenshot discrepancy.'};
+  f.deps.cutoff = '2026-01-04T00:00:00Z';
+  selection.expected_cutoff = f.deps.cutoff;
+  f.properties.set('BRIDGE_DELIVERY_ENABLED','true');
+  f.properties.set('BRIDGE_AUTOMATIC_ENABLED','true');
+  f.properties.set('BRIDGE_AUTOMATIC_MODE','pilot');
+  f.properties.set('BRIDGE_AUTOMATIC_MAX_NEW','3');
+  f.properties.set('BRIDGE_AUTOMATIC_START_AT',f.deps.cutoff);
+  f.properties.set('BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION','rpos.bridge.automatic.pilot.control.v1');
+  return Object.assign(f, {selection,
+    runHistorical:() => clone(f.c.rposBridgeHistoricalReviewed_(selection,f.deps)),
+    runHistoricalNative:() => clone(f.c.rposBridgeFinalizeReviewedHistoricalReceipt(selection))});
+}
+
+test('reviewed historical swimming retains original/alias, recovers response loss and never consumes automatic quota', () => {
+  const f = historicalFixture(), original = clone(f.state.blocks), notes = clone(f.state.notes);
+  const result = f.runHistorical();
+  assert.equal(result.status,'confirmed');
+  assert.equal(result.response_loss_recovered,true);
+  assert.equal(result.replay_without_remote_writes,true);
+  assert.equal(result.automatic_acceptance_cycle,false);
+  assert.equal(result.remote_write_calls,1);
+  assert.deepEqual(f.state.blocks.slice(0,1),original);
+  assert.deepEqual(f.state.notes,notes);
+  const ev = JSON.parse(f.c.rposBridgePlain_(f.state.blocks[1].code.rich_text)
+    .slice('rpos.notion.evidence.v2\n'.length));
+  assert.deepEqual(ev.record,f.stored.export.record);
+  assert.deepEqual(ev.aliases,f.selection.aliases);
+  assert.equal(ev.record.duration_seconds,null);
+  assert.equal(f.state.journal.get(f.stored.receipt_id).mode,undefined);
+  assert.equal(f.runHistorical().status,'no_matching_signed_receipt');
+  assert.equal(f.state.patches.length,2);
+});
+
+test('historical runtime preserves pilot settings and permits only same-page identity/evidence writes', () => {
+  const f = historicalFixture(), before = new Map(f.properties);
+  const result = f.runHistoricalNative();
+  assert.equal(result.status,'confirmed');
+  assert.equal(result.activation_flags_unchanged,true);
+  assert.equal(result.pilot_cutoff_unchanged,true);
+  assert.equal(result.migration_enabled,false);
+  for (const [k,v] of before) assert.equal(f.properties.get(k),v);
+  const added = [...f.properties.keys()].filter(k=>!before.has(k));
+  assert.deepEqual(added,['RPOS_BRIDGE_DELIVERY_'+f.stored.receipt_id]);
+  assert.equal(JSON.parse(f.properties.get(added[0])).mode,undefined);
+  assert.deepEqual(Object.keys(f.state.patches[0].body.properties).sort(),['Source','Source Record ID']);
+});
+
+for (const change of ['future','different_hash','different_uid','different_page','stale_review','non_pool','multiple_segments']) {
+  test('historical review stops '+change+' before any remote write or journal intent', () => {
+    const f = historicalFixture();
+    if (change === 'future') f.selection.expected_cutoff = f.deps.cutoff = f.stored.export.record.start_time;
+    if (change === 'different_hash') f.selection.record_hash = 'a'.repeat(64);
+    if (change === 'different_uid') f.selection.uid = 'synthetic-another-uid';
+    if (change === 'different_page') f.selection.target_page_id = OWNER_BLOCK;
+    if (change === 'stale_review') f.selection.expected_last_edited_time = '2026-01-02T00:00:00Z';
+    if (change === 'non_pool') f.stored.export.record.exercise_type = 'WALKING';
+    if (change === 'multiple_segments') f.stored.export.record.sessions.push(clone(f.stored.export.record.sessions[0]));
+    assert.equal(f.runHistorical().notion_confirmed,false);
+    assert.equal(f.state.patches.length,0);
+    assert.equal(f.state.journal.size,0);
+  });
+}
+
+test('historical partial write stays unresolved; a later run never appends a second managed block', () => {
+  const f = historicalFixture(); f.state.failAfterProperties = true;
+  assert.equal(f.runHistorical().status,'unresolved');
+  const writes = f.state.patches.length;
+  f.state.failAfterProperties = false;
+  assert.equal(f.runHistorical().status,'unresolved');
+  assert.equal(f.state.patches.length,writes);
+  assert.equal(f.state.journal.get(f.stored.receipt_id).state,'attempting');
+});
+
+test('historical duplicate UID or different owner export never permits a write', () => {
+  const duplicate = historicalFixture(); duplicate.state.pageCount = 2;
+  assert.equal(duplicate.runHistorical().notion_confirmed,false);
+  assert.equal(duplicate.state.patches.length,0);
+  assert.equal(duplicate.state.journal.size,0);
+  const different = historicalFixture(), changed = clone(different.stored.export);
+  changed.record.sessions[0].calories_kcal = 999;
+  different.state.blocks[0].code.rich_text = rich(JSON.stringify(changed));
+  assert.equal(different.runHistorical().notion_confirmed,false);
+  assert.equal(different.state.patches.length,0);
+  assert.equal(different.state.journal.size,0);
+});
+
+test('historical runtime binds the reviewed original cutoff before reading health data', () => {
+  const f = historicalFixture();
+  f.properties.set('BRIDGE_AUTOMATIC_START_AT','2026-01-05T00:00:00Z');
+  assert.equal(f.runHistoricalNative().status,'flags_require_review');
+  assert.equal(f.state.requests.length,0);
+  assert.equal(f.state.patches.length,0);
+});
+
+test('historical runtime refuses migration, a changed cutoff or a mid-write flag change', () => {
+  const disabled = historicalFixture(); disabled.properties.set('BRIDGE_MIGRATION_ENABLED','true');
+  assert.equal(disabled.runHistoricalNative().status,'flags_require_review');
+  assert.equal(disabled.state.patches.length,0);
+  const changed = historicalFixture();
+  changed.state.onPropertyPatch = () => changed.properties.set('BRIDGE_AUTOMATIC_START_AT','2026-01-05T00:00:00Z');
+  assert.equal(changed.runHistoricalNative().notion_confirmed,false);
+  assert.equal(changed.state.blocks.length,1);
+  assert.equal(changed.state.patches.length,1);
+});
+
 test('canonical full-export review recovers lost write response with exactly one evidence append', () => {
   const f = fixture(), original = clone(f.state.blocks[0]);
   const result = f.run();
