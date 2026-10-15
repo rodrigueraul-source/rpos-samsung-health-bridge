@@ -60,4 +60,68 @@ class AutomaticAcquisitionTest {
         }
         assertEquals(1, entries.size)
     }
+
+    @Test fun changedSdkRecordDoesNotStarveExistingAcknowledgementOrNextNewRecord() {
+        var entries = emptyList<QueueEntry>()
+        val requests = mutableListOf<com.google.gson.JsonObject>()
+        val store = object : QueuePersistence {
+            override fun load() = entries
+            override fun save(value: List<QueueEntry>) { entries = value }
+        }
+        val transport = object : BridgeTransport {
+            override fun post(endpoint: String, body: String): String {
+                val request = com.google.gson.JsonParser.parseString(body).asJsonObject
+                requests += request
+                val id = if (request.has("payload_json"))
+                    BridgeProtocol.receiptId(request.get("payload_json").asString)
+                else request.get("receipt_id").asString
+                val hash = "b".repeat(64)
+                return if (request.has("payload_json"))
+                    """{"schema_version":"rpos.exercise.intake.receipt.v1","status":"staged","notion_confirmed":false,"receipt_id":"$id","record_hash":"$hash"}"""
+                else """{"schema_version":"rpos.exercise.acknowledgement.receipt.v1","status":"confirmed","notion_confirmed":true,"receipt_id":"$id","record_hash":"$hash"}"""
+            }
+        }
+        val queue = BridgeQueue(store, transport, { 1800000000L })
+        val p = AutomaticAcquisition.baseline(emptyList(), cut)
+        val original = record("first")
+        val first = AutomaticAcquisition.payloads(p, listOf(original), cut.plusSeconds(600)).single()
+        val firstId = BridgeProtocol.receiptId(first)
+        entries = listOf(QueueEntry(firstId, first, "staged", "notion_pending", 1, 0, "b".repeat(64)))
+        val fresh = record("next", "2026-01-02T00:06:00Z", "2026-01-02T00:09:00Z")
+        val payloads = AutomaticAcquisition.payloads(p,
+            listOf(original.copy(customTitle = "SDK corrected"), fresh), cut.plusSeconds(900))
+        val config = BridgeConfig("https://script.google.com/macros/s/SyntheticDeployment000001/exec", "a".repeat(64))
+        assertEquals("completed_with_record_changes", AutomaticAcquisition.synchronize(queue, config, payloads))
+        assertEquals(2, entries.size)
+        assertEquals(first, entries.first().payload)
+        assertEquals("confirmed", entries.first().state)
+        assertEquals("staged", entries.last().state)
+        assertEquals(2, requests.size)
+        assertEquals(1, requests.count { it.has("payload_json") })
+        assertEquals("next", BridgeProtocol.export(requests.single { it.has("payload_json") }
+            .get("payload_json").asString).getAsJsonObject("record").get("uid").asString)
+        val restarted = BridgeQueue(store, transport, { 1800000000L })
+        AutomaticAcquisition.synchronize(restarted, config, payloads)
+        assertEquals(first, entries.first().payload)
+        assertEquals(2, entries.size)
+        assertEquals(2, requests.size) // Original remains confirmed, new intake respects backoff.
+    }
+
+    @Test fun storageFailureStillStopsBeforeAnyNetworkRequest() {
+        var network = false
+        val queue = BridgeQueue(object : QueuePersistence {
+            override fun load() = emptyList<QueueEntry>()
+            override fun save(value: List<QueueEntry>) { throw BridgeFailure("queue_storage_error") }
+        }, object : BridgeTransport { override fun post(endpoint: String, body: String): String {
+            network = true; return "{}"
+        } }, { 1800000000L })
+        val p = AutomaticAcquisition.baseline(emptyList(), cut)
+        val config = BridgeConfig("https://script.google.com/macros/s/SyntheticDeployment000001/exec", "a".repeat(64))
+        val error = assertThrows(BridgeFailure::class.java) {
+            AutomaticAcquisition.synchronize(queue, config,
+                AutomaticAcquisition.payloads(p, listOf(record("new")), cut.plusSeconds(600)))
+        }
+        assertEquals("queue_storage_error", error.code)
+        assertFalse(network)
+    }
 }

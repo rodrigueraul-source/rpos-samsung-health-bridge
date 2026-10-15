@@ -131,7 +131,8 @@ class AndroidBridgeRuntime private constructor(context: Context) {
     @Synchronized fun pauseAutomatic() { automaticPolicy()?.let { saveAutomatic(it.copy(enabled = false)) } }
     @Synchronized fun automaticResult(reason: String) {
         val safe = setOf("ready", "completed", "automatic_read_failed", "queue_full", "record_changed",
-            "automatic_record_invalid", "automatic_storage_error", "not_configured", "recovery_pending")
+            "automatic_record_invalid", "automatic_storage_error", "not_configured", "recovery_pending",
+            "completed_with_record_changes")
         automaticPolicy()?.let { saveAutomatic(it.copy(lastResult = if (reason in safe) reason else "automatic_read_failed")) }
     }
     @Synchronized fun synchronizeAutomatic(records: List<RposExercise>, now: Instant): String {
@@ -139,10 +140,8 @@ class AndroidBridgeRuntime private constructor(context: Context) {
         if (!p.enabled) return summary()
         val cfg = config() ?: throw BridgeFailure("not_configured")
         if (recovery.active()) throw BridgeFailure("recovery_pending")
-        AutomaticAcquisition.payloads(p, records, now).forEach { queue.enqueue(it) }
-        // The existing durable queue guards duplicate/changed records and uncertain RPCs.
-        queue.sendDue(cfg, max = 3)
-        automaticResult("completed")
+        automaticResult(AutomaticAcquisition.synchronize(queue, cfg,
+            AutomaticAcquisition.payloads(p, records, now)))
         return summary()
     }
     private fun withAutomaticStatus(receipts: String): String = receipts +
