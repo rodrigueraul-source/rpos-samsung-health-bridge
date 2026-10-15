@@ -1,0 +1,116 @@
+/* Explicit owner invocation only. No endpoint, trigger or automatic acquisition
+ * calls this operator. Supply one private, reviewed receipt/page/hash manifest.
+ * This completes an existing historical swimming page while the bounded pilot
+ * remains unchanged. It does not enable migration or create a page. */
+function rposBridgeHistoricalReviewed_(selection, deps) {
+  const out = {schema_version:'rpos.bridge.historical.review.v1',
+    scope:'assisted_historical_swimming', status:'review_required', notion_confirmed:false};
+  try {
+    if (!selection || selection.schema_version !== 'rpos.bridge.historical.selection.v1' ||
+        !/^[a-f0-9]{64}$/.test(selection.receipt_id || '') ||
+        !/^[a-f0-9]{64}$/.test(selection.record_hash || '') ||
+        !rposBridgeText_(selection.uid, 2000) || selection.expected_cutoff !== deps.cutoff ||
+        !Array.isArray(selection.aliases) ||
+        !rposBridgeText_(selection.review_basis, 2000)) return out;
+    const target = rposBridgeUuid_(selection.target_page_id), id = selection.receipt_id;
+    const core = rposBridgeCanonicalCore_();
+    const review = {schema_version:'rpos.bridge.review.v2', source:'samsung_health',
+      uid:selection.uid, record_hash:selection.record_hash, target_page_id:target,
+      expected_last_edited_time:selection.expected_last_edited_time,
+      expected_source:'samsung_health', expected_uid:selection.uid,
+      aliases:selection.aliases, review_basis:selection.review_basis};
+    function verify(stored) {
+      const r = stored.export && stored.export.record;
+      if (stored.receipt_id !== id || stored.record_hash !== selection.record_hash || !r ||
+          r.uid !== selection.uid || r.exercise_type !== 'POOL_SWIMMING' ||
+          !Array.isArray(r.sessions) || r.sessions.length !== 1 ||
+          r.sessions[0].exercise_type !== 'POOL_SWIMMING' ||
+          rposBridgeTime_(r.start_time) >= rposBridgeTime_(deps.cutoff)) {
+        rposBridgeFailure_('receipt_requires_review');
+      }
+    }
+    const remote = Object.assign({}, deps.remote, {
+      read:function(pageId) {
+        if (pageId !== target) rposBridgeFailure_('delivery_conflict');
+        return deps.remote.read(pageId);
+      }, prepare:function(page, stored) {
+        core.review(review, stored, page, deps.remote);
+        return deps.remote.prepare(page, stored, selection.aliases);
+      }});
+    const result = rposBridgeCanonicalDelivery_(Object.assign({}, deps, {
+      listReceipts:function() { return [id]; }, remote:remote,
+      store:{find:function(receipt) {
+        if (receipt !== id) rposBridgeFailure_('delivery_conflict');
+        const files = deps.store.find(receipt);
+        files.forEach(function(file) { verify(file.value); });
+        return files;
+      }, getIntent:function(receipt) { return deps.store.getIntent(receipt); }},
+      ownerExportMatches:function(pageId, stored) {
+        verify(stored);
+        if (pageId !== target) rposBridgeFailure_('delivery_conflict');
+        core.review(review, stored, deps.remote.read(pageId), deps.remote);
+        return deps.ownerExportMatches(pageId, stored);
+      }}));
+    return Object.assign(out, result, {schema_version:'rpos.bridge.historical.review.v1',
+      scope:'assisted_historical_swimming', receipt_id:id, record_hash:selection.record_hash,
+      target_page_id:target, automatic_acceptance_cycle:false});
+  } catch (ignore) { return out; }
+}
+
+function rposBridgeFinalizeReviewedHistoricalReceipt(selection) {
+  let report = {schema_version:'rpos.bridge.historical.review.v1', status:'runtime_incomplete',
+    notion_confirmed:false, automatic_acceptance_cycle:false};
+  try {
+    if (typeof rposBridgeCanonicalDelivery_ !== 'function' ||
+        typeof rposBridgeCanonicalCore_ !== 'function' ||
+        typeof rposBridgeOwnerExportMatches_ !== 'function' ||
+        typeof rposBridgeCanonicalJournal_ !== 'function' ||
+        typeof rposBridgeCanonicalHttp_ !== 'function' ||
+        typeof rposBridgeNotionPort_ !== 'function') return report;
+    if (!selection) return Object.assign(report, {status:'review_required'});
+    const props = PropertiesService.getScriptProperties();
+    const names = ['BRIDGE_INTAKE_ENABLED','BRIDGE_DELIVERY_ENABLED','BRIDGE_AUTOMATIC_ENABLED',
+      'BRIDGE_MIGRATION_ENABLED','BRIDGE_SCHEDULER_BINDING_REVIEWED','BRIDGE_AUTOMATIC_START_AT',
+      'BRIDGE_FITNESS_DATA_SOURCE_ID','BRIDGE_RECEIPT_FOLDER_ID','NOTION_TOKEN',
+      'BRIDGE_AUTOMATIC_MODE','BRIDGE_AUTOMATIC_MAX_NEW','BRIDGE_INTAKE_HMAC_KEY',
+      'BRIDGE_AUTOMATIC_PILOT_CONTROL_VERSION'];
+    const before = names.map(function(k) { return props.getProperty(k); });
+    const source = rposBridgeUuid_(before[6]);
+    function flagsOk() {
+      return before.slice(0,5).join('|') === 'true|true|true|false|true' &&
+        before[9] === 'pilot' && before[10] === '3' && before[5] === selection.expected_cutoff &&
+        before[12] === 'rpos.bridge.automatic.pilot.control.v1' &&
+        typeof RPOS !== 'undefined' && source === rposBridgeUuid_(RPOS.fitnessDataSourceId) &&
+        names.every(function(k,i) { return props.getProperty(k) === before[i]; });
+    }
+    if (!flagsOk()) return Object.assign(report, {status:'flags_require_review'});
+    rposBridgeTime_(before[5]);
+    const raw = rposBridgeCanonicalHttp_(before[8]), started = Date.now();
+    let selectedPage = null;
+    const http = {request:function(method,path,payload) {
+      if (!flagsOk() || Date.now() - started > 180000) rposBridgeFailure_('delivery_conflict');
+      const query = method === 'POST' && path === '/data_sources/' + source + '/query';
+      const patch = method === 'PATCH' && selectedPage &&
+        (path === '/pages/' + selectedPage || path === '/blocks/' + selectedPage + '/children');
+      if (!(method === 'GET' || query || patch)) rposBridgeFailure_('delivery_conflict');
+      if (patch && path === '/pages/' + selectedPage &&
+          Object.keys(payload.properties || {}).some(function(k) {
+            return ['Source','Source Record ID','Notes'].indexOf(k) < 0;
+          })) rposBridgeFailure_('delivery_conflict');
+      return raw.request(method,path,payload);
+    }};
+    report = rposBridgeHistoricalReviewed_(selection, {flagsOk:flagsOk, cutoff:before[5],
+      sha256:rposBridgeSha_, lock:LockService.getScriptLock(),
+      store:rposBridgeDriveStore_(before[7],props),
+      journal:rposBridgeCanonicalJournal_(props,'RPOS_BRIDGE_DELIVERY_'),
+      migrationJournal:rposBridgeCanonicalJournal_(props,'RPOS_BRIDGE_MIGRATION_'),
+      remote:rposBridgeNotionPort_(http,source,rposBridgeSha_),
+      ownerExportMatches:function(id,stored) { return rposBridgeOwnerExportMatches_(http,id,stored); },
+      selectPage:function(id) { selectedPage = rposBridgeUuid_(id); }});
+    report.activation_flags_unchanged = flagsOk();
+    report.migration_enabled = props.getProperty('BRIDGE_MIGRATION_ENABLED') === 'true';
+    report.pilot_cutoff_unchanged = props.getProperty('BRIDGE_AUTOMATIC_START_AT') === before[5];
+  } catch (ignore) { report.status = 'review_required'; }
+  Logger.log(JSON.stringify(report));
+  return report;
+}
