@@ -16,7 +16,7 @@ function fixture({withoutDeliveryModule = true} = {}) {
   const c = vm.createContext({Date, JSON, Number, encodeURIComponent});
   for (const file of ['BridgeIntake.gs', 'BridgeEndpoint.gs',
     withoutDeliveryModule ? 'BridgeRuntimeHelpers.gs.txt' : 'BridgeDelivery.gs',
-    'BridgeNotion.gs', 'BridgeCanonicalDelivery.gs']) {
+    'BridgeNotion.gs', 'BridgeCanonicalDelivery.gs', 'BridgePilotExistingReceipt.gs']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script', file), 'utf8'), c);
   }
   const record = {uid: 'synthetic-canonical-001', start_time: '2026-01-03T12:00:00.123Z',
