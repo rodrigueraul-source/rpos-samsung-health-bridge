@@ -531,7 +531,7 @@ test('reviewed existing pilot receipt preserves attempting journal on uncertain 
   const f=reviewedPilotFixture();
   f.state.failAfterProperties=true;
   const result=f.runReviewed();
-  assert.equal(result.status,'delivery_error');
+  assert.equal(result.status,'unresolved');
   assert.equal(f.state.patches.length,2);
   assert.equal(f.state.journal.get(f.stored.receipt_id).state,'attempting');
   f.state.failAfterProperties=false;
