@@ -454,3 +454,88 @@ test('standalone transport rejects foreign paths, redirects, non-objects and HTT
     raw = value; assert.throws(() => http.request('GET', '/pages/' + PAGE));
   }
 });
+
+
+function reviewedPilotFixture() {
+  const f=fixture();
+  f.properties.set('BRIDGE_DELIVERY_ENABLED','true');
+  f.properties.set('BRIDGE_AUTOMATIC_ENABLED','true');
+  f.properties.set('BRIDGE_AUTOMATIC_MODE','pilot');
+  f.properties.set('BRIDGE_AUTOMATIC_MAX_NEW','3');
+  f.properties.set('BRIDGE_MIGRATION_ENABLED','false');
+  const target={receipt_id:f.stored.receipt_id,record_hash:f.stored.record_hash,
+    uid:f.stored.export.record.uid,page_id:PAGE};
+  return Object.assign(f,{target,runReviewed:()=>clone(
+    f.c.rposBridgeReviewedPilotExisting_(f.deps,target))});
+}
+
+test('reviewed existing pilot receipt recovers canonical ACK without new page or quota change',()=>{
+  const f=reviewedPilotFixture(), original=clone(f.state.blocks),
+    propertiesBefore=new Map(f.properties);
+  const r=f.runReviewed();
+  assert.equal(r.status,'confirmed');
+  assert.equal(r.notion_confirmed,true);
+  assert.equal(r.response_loss_recovered,true);
+  assert.equal(r.replay_without_remote_writes,true);
+  assert.equal(r.remote_write_calls,1);
+  assert.equal(f.state.patches.length,2);
+  assert.deepEqual(f.state.blocks[0],original[0]);
+  assert.equal(f.state.blocks.length,2);
+  assert.equal(f.state.pageCount,1);
+  assert.deepEqual(f.properties.get('BRIDGE_AUTOMATIC_MAX_NEW'),'3');
+  assert.deepEqual(f.properties.get('BRIDGE_AUTOMATIC_MODE'),'pilot');
+  assert.deepEqual(f.properties.get('BRIDGE_MIGRATION_ENABLED'),'false');
+  for(const key of ['BRIDGE_DELIVERY_ENABLED','BRIDGE_AUTOMATIC_ENABLED',
+    'BRIDGE_AUTOMATIC_MAX_NEW','BRIDGE_AUTOMATIC_MODE']) {
+    assert.equal(f.properties.get(key),propertiesBefore.get(key));
+  }
+  assert.equal(f.state.journal.get(f.stored.receipt_id).state,'confirmed');
+  const canonical=JSON.parse(f.c.rposBridgePlain_(f.state.blocks[1].code.rich_text)
+    .slice('rpos.notion.evidence.v2\n'.length));
+  assert.equal(canonical.receipt_id,f.stored.receipt_id);
+  assert.equal(canonical.record_hash,f.stored.record_hash);
+  assert.deepEqual(canonical.record,f.stored.export.record);
+  assert.equal(f.runReviewed().status,'no_matching_signed_receipt');
+  assert.equal(f.state.patches.length,2);
+});
+
+test('reviewed existing pilot receipt rejects wrong target, hash, UID or duplicate without writes',()=>{
+  for(const field of ['receipt_id','record_hash','uid','page_id']){
+    const f=reviewedPilotFixture(),bad=clone(f.target);
+    bad[field] = field==='uid'?'foreign-uid':
+      field==='page_id'?'55555555-5555-5555-5555-555555555555':'f'.repeat(64);
+    const r=f.c.rposBridgeReviewedPilotExisting_(f.deps,bad);
+    assert.notEqual(r.status,'confirmed',field);
+    assert.equal(f.state.patches.length,0,field);
+    assert.equal(f.state.journal.size,0,field);
+  }
+  const f=reviewedPilotFixture();
+  f.state.pageCount=2;
+  const r=f.runReviewed();
+  assert.notEqual(r.status,'confirmed');
+  assert.equal(f.state.patches.length,0);
+});
+
+test('reviewed existing pilot receipt blocks missing original export or flag changes',()=>{
+  const f=reviewedPilotFixture();
+  f.state.blocks=[];
+  assert.equal(f.runReviewed().status,'owner_export_requires_review');
+  assert.equal(f.state.patches.length,0);
+  const g=reviewedPilotFixture();
+  g.deps.flagsOk=()=>false;
+  assert.equal(g.runReviewed().status,'flags_require_review');
+  assert.equal(g.state.patches.length,0);
+});
+
+test('reviewed existing pilot receipt preserves attempting journal on uncertain remote write',()=>{
+  const f=reviewedPilotFixture();
+  f.state.failAfterProperties=true;
+  const result=f.runReviewed();
+  assert.equal(result.status,'delivery_error');
+  assert.equal(f.state.patches.length,2);
+  assert.equal(f.state.journal.get(f.stored.receipt_id).state,'attempting');
+  f.state.failAfterProperties=false;
+  const next=f.runReviewed();
+  assert.notEqual(next.status,'confirmed');
+  assert.equal(f.state.patches.length,2);
+});
