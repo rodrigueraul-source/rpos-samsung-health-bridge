@@ -1,10 +1,13 @@
 # Samsung Health Bridge — avance y evidencia
 
-## Estado vigente · conciliación Notion/GitHub · 11-Oct-2026
+## Estado vigente · conciliación Notion/GitHub · 18-Oct-2026
 
-**BUILD · 83.33% · 5/6 hitos verificados · HITO 6 PAUSADO.**
-Control maestro: R-POS Program Registry e Implementation Log de Notion
-(checkpoint operativo del 08-Oct y decisión 08-Oct 23:21 CDMX).
+**BUILD · 83.33% · 5/6 hitos verificados · APK 0.8.3 · SDK 1.1.0.**
+Control maestro: R-POS Program Registry e Implementation Log de Notion.
+Continuous está activo según el checkpoint aceptado del 18-Oct; migración OFF.
+El piloto alcanzó 3/3. El hito 6 tiene dispensa sólo para aceptación limitada,
+no cierre técnico. Falta un recibo nuevo de captura automática natural posterior
+al cambio de modo. Ver [corte vigente](operations-checkpoint-2026-10-18.md).
 La Master WBS V2.0 conserva el 35% como baseline histórico anterior;
 el progreso actual cuenta seis hitos explícitos, sin ponderar horas,
 esfuerzo, pruebas ni documentación. No hay Bridge PASS.
@@ -16,9 +19,12 @@ esfuerzo, pruebas ni documentación. No hay Bridge PASS.
 | 3. Recepción firmada privada y cola | VERIFICADO | Intake Drive autenticado, UID/hash, cola persistente |
 | 4. Integración acotada a Notion y continuidad scheduler | VERIFICADO | Destino único, bloque v2, readback, aliases y replay sin duplicados |
 | 5. Recuperación de respuesta incierta y continuidad OS/proceso | VERIFICADO 08-Oct | Respuesta perdida recuperada en ejecución real; replay sin nuevas escrituras; reinicio reportado por propietario seguido de capturas READ/CHECK y mismo registro sin pérdida. No telemetría de boot ni falla natural generalizada |
-| 6. Hardening Samsung y cierre operativo repetible | PENDIENTE · PAUSADO 08-Oct 23:21 | Faltan casos físicos Samsung de error y checklist release. Diferido por no bloquear la webapp ni la operación asistida confirmada |
+| 6. Hardening Samsung y cierre operativo repetible | PENDIENTE TÉCNICO · DISPENSA LIMITADA | Dispensa del propietario para aceptación operativa limitada; no acreditada como PASS físico ni como sexto hito |
 
-### Evidencia posterior al hito 5
+### Antecedentes posteriores al hito 5 · 08–11 Oct
+
+Los estados y contadores de esta sección son históricos y no sustituyen
+la operación continua aceptada del 18-Oct.
 
 - **08-Oct 12:57–13:27 CDMX:** Core confirmado por operador real
   (`notion_confirmed=true`, `response_loss_recovered=true`,
@@ -38,13 +44,13 @@ esfuerzo, pruebas ni documentación. No hay Bridge PASS.
   La diferencia frente a `4/1` del 08-Oct no se reconcilia sin recibos
   nuevos; el usuario no autorizó reactivar el gate técnico para ello.
 
-**Límites operativos:** intake/binding ON y entrega continua/migración OFF
-según último checkpoint remoto verificado, no nueva auditoría de flags.
-Adquisición/conciliación automáticas y SA-RPOS-VERTICAL-001 siguen pendientes,
-separados del conteo 5/6. No correr finalizadores, reenviar entrenamientos,
-modificar Apps Script/APK, ni abrir nuevas pruebas del hito6 por esta edición.
-**Siguiente foco:** Coach Digital. Mantener historial, archivos y pruebas
-técnicas anteriores sin presentarlos como estado vigente.
+**Límites operativos vigentes:** intake/binding/delivery/automatic ON,
+modo continuous y migración OFF conforme al checkpoint aceptado del 18-Oct.
+Esta edición no reconsulta ni modifica flags. Mantener corte, cola, firma,
+journals, temporizador, permisos y acceso existentes.
+**Siguiente evidencia:** captura nueva natural en continuous, recibo/journal
+confirmados, fila Notion única y acuse Android. La prueba física del hito 6
+no se reabre ni se da por cerrada. Los antecedentes siguientes se conservan.
 
 ## Historial anterior · 05–06 Oct (no sustituye el estado vigente)
 

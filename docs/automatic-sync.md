@@ -1,46 +1,45 @@
-# Automatic acquisition candidate 0.8.0
+# Automatic acquisition — operational checkpoint18-Oct-2026
 
-The installed 0.7.1 receipt-recovery release remains accepted. This candidate
-adds automatic acquisition; it is OFF by default and has not passed physical
-automatic-operation acceptance. Notion remains the System of Record.
+The accepted private checkpoint records Android 0.8.3/SDK 1.1.0, pilot 3/3 and
+continuous mode active. Intake, reviewed binding, delivery and automatic
+acquisition are ON; migration is OFF. Notion remains the System of Record.
+This document does not independently verify deployed bytes or installed APK
+hashes. See [checkpoint](operations-checkpoint-2026-10-18.md).
 
-Android uses the existing Samsung Exercise READ grant, original SDK mapping,
-private endpoint, certificate and encrypted queue. Enabling takes an immutable
-cutover and a baseline of existing UIDs. Historical, unfinished and recently
-updated records are excluded. Pausing/resuming retains the original cutoff.
-A persisted JobScheduler job requests network work every 15 minutes; Android
-can delay it under battery, quota, standby or force-stop rules. Reopening is
-required after Android force-stop. No permission popup runs in the background.
-READ/COPY/manual queue and the existing acknowledgement-recovery path remain.
+Android reuses the existing Samsung Exercise READ grant, original SDK mapping,
+private transport, certificate and encrypted queue. The immutable cutoff and
+baseline exclude historical/unfinished records. Settling and changed-record
+handling retain original queued payloads. Pause/resume preserves the cutoff.
+A persisted JobScheduler job requests work every 15 minutes; Android may delay
+execution. Reopening may be needed after force-stop. No background consent
+popup is introduced. READ/COPY/manual queue and receipt recovery remain.
 
-The server coordinator verifies the signed immutable intake, canonical hash,
-UID uniqueness, cutoff, schema and potential existing date/activity records.
-Date/activity only block creation; they never select a destination. Ambiguous
-or planned sessions require review. A new page carries the exact SDK export
-and one v2 receipt. Parent nulls and subjective feedback remain absent.
-Verified write intent precedes creation. An uncertain creation is never blindly
-retried; fresh unique identity/evidence/original readback can recover it.
+The server validates signed immutable intake, canonical hash, source UID
+uniqueness, cutoff and schema. Date/activity matches only block uncertain
+creation; they never choose a destination. Ambiguous/planned matches require
+review. Intent is persisted before creation; an uncertain response is recovered
+through unique identity, original evidence and readback rather than blind retry.
 
-Activation requires explicit configuration: intake and reviewed binding ON,
-delivery/automatic ON, migration OFF, immutable start timestamp, and mode
-`pilot` with `BRIDGE_AUTOMATIC_MAX_NEW` from 1 to 3. Attempting as well as
-confirmed automatic intents consume this limit. Continuous mode is a separate
-decision after the real pilot. No flags or triggers are changed by installing
-the code. The optional pending timer is separately authorized, bounded to
-three due receipts and persists backoff before each retry. Review cases stop.
+Pilot activation and continuous promotion are separate controlled operations.
+The accepted pilot already reached 3/3. Do not reactivate it for documentation.
+PR #11 adds an owner-only promotion guard that changes only the mode key and
+rolls back a failed readback. Loading or merging code invokes no operation.
+The existing pending-receipt clock and bounded retries are preserved.
 
-The isolated `BridgeAutomaticRuntime.gs.txt` addon contains lexical copies of
-tested dependencies so a partial legacy runtime cannot cause another missing
-helper failure. It exposes only delivery/pending entry points and performs no
-service calls at load. Install the addon and update the existing Endpoint;
-do not add duplicate global copies or replace unrelated scheduler code.
+The isolated automatic addon carries tested dependencies. Do not duplicate
+global modules or replace unrelated scheduler code. The source builders and
+current CI check bundle consistency; they do not prove deployed source hashes.
 
-Closure requires three real automatic cycles with source, receipt/hash, unique
-Notion readback and Android ack, including recovery/replay. Synthetic tests and
-the three prior bounded 0.7.1 cases are separate evidence. Faster read/replay of
-existing records does not prove automatic first writes. Historical migration
-remains OFF until its explicit scope, aliases, conflicts and reviews are ready.
+Remaining operational evidence is one genuinely new natural capture after
+continuous promotion: new receipt/UID, confirmed journal, exact unique Notion
+row and matching Android acknowledgement. Existing receipt replays and CI mock
+cannot replace this evidence. Milestone 6 remains technically open with an
+owner waiver only for limited acceptance. BUILD stays83.33% / 5 of 6.
 
-Capacity is explicit: the existing queue retains at most 100 original exports;
-the cutover baseline accepts at most 1,000 UIDs. Exhaustion stops safely and
-requires review; no automatic purge, loss of originals or visibility change.
+Capacity remains 100 queued original exports and 1,000 baseline UIDs. Exhaustion
+stops safely for review; no automatic purge, schema expansion, visibility change
+or historical migration is introduced by this documentation correction.
+
+Historical preparation: the 0.8.0 candidate introduced automatic acquisition
+while 0.7.1 was the accepted receipt-recovery release. Those preparation states
+are historical and must not be used as current OFF/ON settings.

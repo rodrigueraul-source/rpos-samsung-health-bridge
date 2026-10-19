@@ -1,0 +1,51 @@
+{
+  "schema_version": "rpos.release.provenance.v1",
+  "status": "example_incomplete_not_release_evidence",
+  "checkpoint_date": "2026-10-18",
+  "source": {
+    "inspected_main_commit": "0067ac5f15e151c13239dcdbafb95d5ea9f3750e",
+    "candidate_android_083_commit": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
+    "installed_apk_source_commit": null
+  },
+  "android": {
+    "reported_version": "0.8.3",
+    "source_version_code": 12,
+    "installed_package_id": null,
+    "installed_flavor": null,
+    "installed_apk_sha256": null,
+    "installed_certificate_sha256": null,
+    "sdk_version": "1.1.0",
+    "sdk_sha256": null,
+    "real_build_result": null
+  },
+  "apps_script": {
+    "source_bundle_sha256": null,
+    "automatic_addon_sha256": null,
+    "saved_modules_sha256": null,
+    "published_source_fingerprint": null,
+    "deployment_match_verified": false
+  },
+  "ci": {
+    "exact_commit": "0067ac5f15e151c13239dcdbafb95d5ea9f3750e",
+    "validate_mvp_run": 39139565324,
+    "validate_mvp_result": "success",
+    "android_mock_run": 39139565369,
+    "android_mock_result": "success",
+    "proves_samsung_release": false,
+    "proves_physical_acceptance": false
+  },
+  "runtime_checkpoint": {
+    "source": "accepted_private_Notion_checkpoint_not_requeried",
+    "mode": "continuous",
+    "migration": "OFF",
+    "pilot_accepted": 3,
+    "build_verified_milestones": 5,
+    "build_total_milestones": 6,
+    "build_percent": 83.33,
+    "new_natural_continuous_receipt": "pending",
+    "milestone6": "waived_for_limited_acceptance_only_not_technically_passed"
+  },
+  "private_evidence_reference": null,
+  "release_acceptance": null,
+  "owner_role": "R-POS owner"
+}
