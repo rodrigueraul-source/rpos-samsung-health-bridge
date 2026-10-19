@@ -1,15 +1,29 @@
-# Apps Script intake, bounded delivery and receipt query — existing scheduler
+# Apps Script intake, delivery and receipt query — existing scheduler
 
-This runtime targets the user-selected existing Apps Script scheduler.
-The initial web deployment was published 06-Oct. Later checkpoints verified
-private signed intake, bounded canonical delivery, scheduler reuse and the
-v0.5 phone's confirmed receipt. Intake/binding are ON; continuous delivery and
-migration remain OFF. A public negative-authentication check now observes the
-dedicated read-only query contract; this does not prove authenticated phone
-recovery or the exact deployed source hash. The latest owner screenshots show
-v0.6 discarded-response recovery reaching confirmed; OS restart evidence and
-the remaining operational acceptance cases still need verification. Saving
-editor changes alone does not update a versioned endpoint.
+## Current checkpoint — 19-Oct-2026
+
+The accepted Notion checkpoint reports Android 0.8.3/SDK 1.1.0, pilot 3/3 and
+continuous operation active. Intake, reviewed binding, delivery and automatic
+acquisition are ON; migration remains OFF. Preserve the cutoff, queue, journals,
+existing retry clock, signatures, source binding and access.
+
+Limited operational PASS was accepted on 19-Oct after a new natural automatic
+capture: original UID, receipt, confirmed journal, unique Notion record/readback
+and matching Android acknowledgement. Technical development remains 83.33%
+(5 of 6); milestone 6 is owner-waived, not technically passed.
+
+This documentation correction does not run an operator, change a flag, install
+a trigger or redeploy the endpoint. Exact saved/deployed source hashes remain
+a separate provenance check; saving editor text does not publish a version.
+
+See [current checkpoint](../docs/operations-checkpoint-2026-10-18.md) and
+[release policy](../docs/release-policy.md).
+
+## Historical implementation and handoff notes
+
+The procedures below preserve their original checkpoints, including OFF flags
+and older APK references. They do not state current runtime settings or
+authorize repeating accepted probes, finalizers, deployments or activations.
 
 ## Finalize a new canonical session without per-UID script rewrites
 
