@@ -3,7 +3,9 @@
 This is a historical review, not the current runtime state. The accepted 18-Oct
 checkpoint is Android 0.8.3/SDK 1.1.0, continuous ON, migration OFF and BUILD 83.33%
 (5/6). Milestone 6 is waived only for limited acceptance, not technically closed.
-A new natural automatic receipt after continuous activation remains pending.
+A new natural automatic receipt after continuous activation was confirmed 19-Oct
+with UID/receipt/journal/unique Notion readback/Android acknowledgement. Limited
+operational PASS is accepted, but milestone 6 remains technically open.
 See [current checkpoint](operations-checkpoint-2026-10-18.md) and
 [release policy](release-policy.md). Do not repeat historical operators merely
 to reconcile this document.

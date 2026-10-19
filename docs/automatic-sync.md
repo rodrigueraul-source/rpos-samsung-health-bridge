@@ -1,4 +1,4 @@
-# Automatic acquisition — operational checkpoint18-Oct-2026
+# Automatic acquisition — 18-Oct promotion / 19-Oct limited PASS
 
 The accepted private checkpoint records Android 0.8.3/SDK 1.1.0, pilot 3/3 and
 continuous mode active. Intake, reviewed binding, delivery and automatic
@@ -30,11 +30,12 @@ The isolated automatic addon carries tested dependencies. Do not duplicate
 global modules or replace unrelated scheduler code. The source builders and
 current CI check bundle consistency; they do not prove deployed source hashes.
 
-Remaining operational evidence is one genuinely new natural capture after
-continuous promotion: new receipt/UID, confirmed journal, exact unique Notion
-row and matching Android acknowledgement. Existing receipt replays and CI mock
-cannot replace this evidence. Milestone 6 remains technically open with an
-owner waiver only for limited acceptance. BUILD stays83.33% / 5 of 6.
+Operational evidence was completed by one genuinely new natural capture on
+19-Oct after continuous promotion: new receipt/UID, confirmed journal, exact
+unique Notion row/readback and matching Android acknowledgement. The accepted
+limited operational PASS does not close milestone 6 technically; the owner
+waiver remains and development stays 83.33% (5 of 6). Do not replay accepted
+receipts or CI mock as a new physical capture.
 
 Capacity remains 100 queued original exports and 1,000 baseline UIDs. Exhaustion
 stops safely for review; no automatic purge, schema expansion, visibility change

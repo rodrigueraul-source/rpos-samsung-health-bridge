@@ -1,4 +1,4 @@
-# Corte operativo aceptado — 18-Oct-2026
+# Corte operativo — 18-Oct promoción / 19-Oct aceptación limitada
 
 Este documento reconcilia la documentación local con el checkpoint privado
 aceptado en Notion. No es una nueva lectura del teléfono o de Script Properties.
@@ -13,18 +13,20 @@ Estado maestro: Program Registry e Implementation Log de R-POS.
 | Delivery y adquisición automática | ON |
 | Modo | continuous |
 | Migración | OFF |
-| Progreso Bridge | BUILD 83.33%; 5/6 hitos |
+| Estado Bridge | PASS operativo limitado 19-Oct; desarrollo técnico 83.33% (5/6) |
 | Hito 6 | Dispensa sólo para aceptación limitada; no PASS técnico |
-| Nueva captura natural posterior a continuous | Pendiente de evidencia |
+| Nueva captura natural posterior a continuous | Confirmada 19-Oct 06:25 CDMX: UID/recibo/journal/Notion único y acuse Android |
 | Hash del APK instalado y fingerprint GAS publicado | No verificados por esta propuesta |
 
 Conservar corte inmutable, origen/UID, cola y payloads originales, recibos,
 journals, firma, temporizador, permisos y acceso existentes. No se propone
 ningún cambio operativo ni una nueva prueba física del hito 6.
 
-La captura pendiente debe ser nueva y natural: UID/recibo posterior a activación,
-journal confirmado, readback Notion único e íntegro y acuse Android concordante.
-Una repetición de un recibo histórico o un resultado de CI mock no la sustituye.
+La captura real y nueva del 19-Oct cumple el cierre operativo limitado: UID
+UID de captura real conservado en Notion privado, recibo recibo real conservado en Notion privado (06:25:29 CDMX),
+journal confirmado, ficha Notion única/readback 06:25:38 y acuse Android concordante.
+La dispensa del hito 6 no acredita 6/6 ni cierre técnico 100%; no repetir un recibo
+histórico ni pruebas ya aceptadas para elevar ese porcentaje.
 
 ## Trazabilidad
 

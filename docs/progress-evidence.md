@@ -1,16 +1,16 @@
 # Samsung Health Bridge — avance y evidencia
 
-## Estado vigente · conciliación Notion/GitHub · 18-Oct-2026
+## Estado vigente · conciliación Notion/GitHub · 19-Oct-2026
 
-**BUILD · 83.33% · 5/6 hitos verificados · APK 0.8.3 · SDK 1.1.0.**
+**PASS operativo limitado · desarrollo técnico 83.33% · 5/6 hitos verificados · APK 0.8.3 · SDK 1.1.0.**
 Control maestro: R-POS Program Registry e Implementation Log de Notion.
 Continuous está activo según el checkpoint aceptado del 18-Oct; migración OFF.
 El piloto alcanzó 3/3. El hito 6 tiene dispensa sólo para aceptación limitada,
-no cierre técnico. Falta un recibo nuevo de captura automática natural posterior
-al cambio de modo. Ver [corte vigente](operations-checkpoint-2026-10-18.md).
+no cierre técnico. La captura autónoma nueva del 19-Oct está acreditada con UID,
+recibo, journal, ficha Notion única/readback y acuse Android. Ver [corte vigente](operations-checkpoint-2026-10-18.md).
 La Master WBS V2.0 conserva el 35% como baseline histórico anterior;
 el progreso actual cuenta seis hitos explícitos, sin ponderar horas,
-esfuerzo, pruebas ni documentación. No hay Bridge PASS.
+esfuerzo, pruebas ni documentación. El PASS es sólo operativo limitado; el hito 6 técnico sigue dispensado, no acreditado.
 
 | Hito de integración | Estado vigente | Evidencia / restricción |
 | --- | --- | --- |
@@ -48,9 +48,11 @@ la operación continua aceptada del 18-Oct.
 modo continuous y migración OFF conforme al checkpoint aceptado del 18-Oct.
 Esta edición no reconsulta ni modifica flags. Mantener corte, cola, firma,
 journals, temporizador, permisos y acceso existentes.
-**Siguiente evidencia:** captura nueva natural en continuous, recibo/journal
-confirmados, fila Notion única y acuse Android. La prueba física del hito 6
-no se reabre ni se da por cerrada. Los antecedentes siguientes se conservan.
+**Evidencia nueva 19-Oct:** captura natural en continuous, UID
+UID de captura real conservado en Notion privado, recibo recibo real conservado en Notion privado, journal
+confirmado, ficha Notion única/readback y acuse Android. PASS operativo limitado
+cerrado; prueba física del hito 6 no se reabre ni se acredita. Los antecedentes
+siguientes se conservan.
 
 ## Historial anterior · 05–06 Oct (no sustituye el estado vigente)
 

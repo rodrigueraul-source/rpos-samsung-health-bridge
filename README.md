@@ -4,17 +4,17 @@ Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness*
 
 ## Estado actual
 
-**Corte operativo 18-Oct-2026: BUILD · 83.33% · 5/6 hitos verificados · APK 0.8.3 · SDK 1.1.0.**
+**Corte operativo vigente 19-Oct-2026: PASS operativo limitado · desarrollo técnico 83.33% (5/6) · APK 0.8.3 · SDK 1.1.0.**
 
 La operación continua está activa conforme al checkpoint aceptado en Notion.
 El hito 6 tiene dispensa del propietario sólo para aceptación operativa limitada;
-no está técnicamente cerrado. Falta comprobar una captura automática nueva y
-natural posterior a la activación. Ver [corte vigente](docs/operations-checkpoint-2026-10-18.md).
+no está técnicamente cerrado. La captura automática natural del 19-Oct ya se acreditó
+con UID, recibo, journal, ficha Notion única/readback y acuse Android. Ver [corte vigente](docs/operations-checkpoint-2026-10-18.md).
 
 **Fuente de control:** R-POS Program Registry e Implementation Log en Notion;
 detalle de trazabilidad en [docs/progress-evidence.md](docs/progress-evidence.md).
 Este porcentaje corresponde a cinco hitos aceptados de seis, no a horas o
-puntos de esfuerzo; **no es Bridge PASS**.
+puntos de esfuerzo; **el PASS es operativo limitado, no cierre técnico 6/6 ni PASS 100%.**
 
 - **Hito 5 aceptado el 08-Oct:** entrega Core con respuesta perdida recuperada
   y replay sin nuevas escrituras remotas; reinicio del teléfono reportado por
@@ -32,8 +32,7 @@ puntos de esfuerzo; **no es Bridge PASS**.
 - **Checkpoint vigente del 18-Oct:** intake, binding revisado, delivery y
   adquisición automática ON; modo continuous; migración OFF. Conservar corte,
   cola, journals, firma, permisos, temporizador y visibilidad existentes.
-- **Piloto:** 3/3 entregas aceptadas. Esto no sustituye la captura natural
-  posterior a la transición continua ni el cierre técnico del hito 6.
+- **Piloto:** 3/3 entregas aceptadas. **Captura autónoma nueva 19-Oct:** UID UID de captura real conservado en Notion privado, recibo recibo real conservado en Notion privado, journal confirmado, readback único de Notion y acuse Android. Esta evidencia cierra sólo la aceptación operativa limitada; no el hito 6 técnico.
 - **Código:** main 0067ac5f incorpora los cambios hasta PR #11. Un merge no
   acredita por sí mismo el hash del APK instalado ni del GAS publicado.
 
@@ -84,10 +83,10 @@ Se conservan los cinco hitos aceptados y el piloto 3/3. El hito 6 mantiene
 dispensa sólo para aceptación limitada, sin PASS técnico. No repetir pruebas
 aceptadas, reinstalaciones, finalizadores ni replays para elevar progreso.
 
-El siguiente cierre operativo requiere una captura nueva y natural después
-de continuous: UID/recibo nuevos, journal confirmado, una sola fila Notion
-con evidencia original y acuse Android concordante. Los datos se retienen en
-los destinos privados autorizados; los ejemplos públicos siguen siendo sintéticos.
+La aceptación operativa limitada se cerró el 19-Oct con una captura autónoma real
+posterior a continuous y trazabilidad UID/recibo/journal/Notion/acuse. No exigir
+otra captura para repetir ese cierre. Los datos se retienen en destinos privados
+autorizados; los ejemplos públicos siguen siendo sintéticos.
 
 El cierre se registra en Program Registry e Implementation Log. BUILD sigue
 83.33% (5/6); documentación, CI mock y políticas propuestas no suman hitos.

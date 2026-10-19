@@ -70,7 +70,7 @@ El corte aceptado del 18-Oct es 0.8.3/SDK 1.1.0, piloto 3/3, continuous ON
 y migración OFF. BUILD sigue 83.33%, cinco hitos de seis. El hito 6 conserva
 dispensa sólo para aceptación limitada, sin cierre técnico.
 
-La siguiente evidencia pendiente es una captura automática nueva y natural
+La evidencia de aceptación limitada se obtuvo el 19-Oct mediante captura automática nueva y natural
 posterior a continuous: recibo/UID nuevos, journal confirmado, una sola fila
 Notion íntegra y acuse Android concordante. No generar datos ni repetir pruebas
 físicas ya aceptadas para completar el documento.

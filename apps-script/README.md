@@ -1,16 +1,16 @@
 # Apps Script intake, delivery and receipt query — existing scheduler
 
-## Current checkpoint — 18-Oct-2026
+## Current checkpoint — 19-Oct-2026
 
 The accepted Notion checkpoint reports Android 0.8.3/SDK 1.1.0, pilot 3/3 and
 continuous operation active. Intake, reviewed binding, delivery and automatic
 acquisition are ON; migration remains OFF. Preserve the cutoff, queue, journals,
 existing retry clock, signatures, source binding and access.
 
-BUILD remains 83.33% / 5 of 6. Milestone 6 is owner-waived only for limited
-operational acceptance, not technically passed. A genuinely new natural
-automatic capture after promotion, confirmed journal, unique Notion readback
-and matching Android acknowledgement remain to be evidenced.
+Limited operational PASS was accepted on 19-Oct after a new natural automatic
+capture: original UID, receipt, confirmed journal, unique Notion record/readback
+and matching Android acknowledgement. Technical development remains 83.33%
+(5 of 6); milestone 6 is owner-waived, not technically passed.
 
 This documentation correction does not run an operator, change a flag, install
 a trigger or redeploy the endpoint. Exact saved/deployed source hashes remain
