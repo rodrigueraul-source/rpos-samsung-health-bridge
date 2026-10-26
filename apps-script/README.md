@@ -1,15 +1,27 @@
 # Apps Script intake, bounded delivery and receipt query — existing scheduler
 
-This runtime targets the user-selected existing Apps Script scheduler.
-The initial web deployment was published 06-Oct. Later checkpoints verified
-private signed intake, bounded canonical delivery, scheduler reuse and the
-v0.5 phone's confirmed receipt. Intake/binding are ON; continuous delivery and
-migration remain OFF. A public negative-authentication check now observes the
-dedicated read-only query contract; this does not prove authenticated phone
-recovery or the exact deployed source hash. The latest owner screenshots show
-v0.6 discarded-response recovery reaching confirmed; OS restart evidence and
-the remaining operational acceptance cases still need verification. Saving
-editor changes alone does not update a versioned endpoint.
+Current operating checkpoint, verified 26-Oct-2026: **limited operational PASS,
+5/6 technical milestones**, with milestone 6 waived for this scope. Intake,
+reviewed binding, delivery and automatic processing are ON; mode is continuous,
+migration OFF, and the original cutoff is retained. The live read-only status
+reported 13 confirmed automatic journals, 0 attempting and 0 future unconfirmed
+receipts, with properties/triggers unchanged.
+
+The existing web deployment remains version 9 (15-Oct); no redeploy was needed
+for the later owner-only reconciliation/control or the property-only promotion.
+The installed reconciliation and continuous-control source hashes match the
+reviewed repository files. This does not fingerprint the complete versioned
+deployment. Saving editor source alone never updates a versioned endpoint.
+
+The existing Bridge timer runs every five minutes on project Head. The project
+also contains unrelated triggers; this audit did not modify any of them.
+See [operational audit and recovery](../docs/operations-audit-2026-10-26.md).
+
+## Historical bounded-delivery operators
+
+The following owner-only procedures document earlier checkpoints. They are not
+instructions to repeat completed delivery, reconciliation or pilot acceptance.
+They must not be used to turn continuous mode off merely to run an old operator.
 
 ## Finalize a new canonical session without per-UID script rewrites
 
@@ -19,7 +31,7 @@ owner-supplied SDK record. Its reviewed delivery coordinator and HTTP/journal
 adapters are packaged in this same file, so absent optional global review or
 delivery workers cannot block it. It uses the accepted intake/Notion runtime
 without replacing it or republishing the endpoint; global continuous delivery
-and migration remain OFF.
+and migration remained OFF at that historical checkpoint.
 It discards the acknowledgement after one actual remote write, then verifies
 read-only recovery and replay. Date, Notes, metrics and feedback stay unchanged.
 See [canonical delivery](../docs/canonical-delivery.md) for the single owner
@@ -180,7 +192,8 @@ Android v0.5 has accepted private intake and a confirmed phone receipt.
 v0.6 prepares the separate recovery query/checkpoint; see
 `../docs/android-recovery.md`. Remaining work is its Google/phone update and
 controlled physical test, actual uncertain-write recovery, remaining Samsung
-errors and operational closure. Registry stays BUILD 66.67%, four of six.
+errors and operational closure. That historical checkpoint was BUILD 66.67%, four of six; the current limited
+acceptance is documented at the top of this file.
 
 ## Dedicated signed read-only receipt query
 
