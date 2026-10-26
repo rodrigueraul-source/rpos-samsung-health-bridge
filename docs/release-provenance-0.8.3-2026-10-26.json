@@ -27,19 +27,25 @@
   "installed_apk": {
     "reported_version_name": "0.8.3-delivery",
     "physical_ui_observed_on": "2026-10-26",
-    "sha256": null,
-    "certificate_sha256": null,
-    "version_code_verified": null,
-    "extraction_status": "waiting_for_owner_read_only_ADB_path"
+    "sha256": "e4e8a4b470eb9b23c41cbd18f06cd1e78e5113ee9065722ffaf5e91ca72607d5",
+    "certificate_sha256": "765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3",
+    "version_code_verified": true,
+    "extraction_status": "PASS_owner_read_only_LADB_hash_matches_verified_distribution",
+    "evidence_scope": "Full installed APK SHA-256 reported by owner and recorded in private System of Record on 2026-10-26; not repeated. Package/version/certificate follow the verified identical bytes.",
+    "version_code": 12
   },
   "build_provenance": {
     "android_gradle_plugin": "8.13.2",
     "artifact_vcs_metadata": "generate_error_reason: NO_VALID_GIT_FOUND",
     "source_commit_verified": null,
     "source_commit_candidate": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
-    "compared_main": "a224cdd1be9ed0a5fa2ba2fd5fc2315c2b22d3b8",
+    "compared_main": "53ae7bb6f248793716473d7ebe7825b2f6a49973",
     "android_source_differences": 0,
-    "independent_rebuild_performed": false
+    "independent_rebuild_performed": false,
+    "candidate_ci_flavor": "mock_only",
+    "candidate_ci_success_count": 4,
+    "candidate_ci_retained_artifacts_returned": 0,
+    "published_github_releases_count": 0
   },
   "gas": {
     "last_observed_deployment_version": 9,
@@ -47,7 +53,15 @@
     "complete_versioned_source_fingerprint": null,
     "fresh_inspection_status": "blocked_by_Google_human_verification",
     "configuration_snapshot_current": false,
-    "runtime_changes": false
+    "runtime_changes": false,
+    "release_reference_commit": "41a67b3a0751b014df0f741c77fc75140424437c",
+    "reference_source_hashes_verified": true,
+    "reference_gs_files_unchanged_at_audited_main": 16,
+    "published_snapshot_retrieved": false,
+    "head_snapshot_retrieved": false,
+    "api_authentication_available": false,
+    "last_observed_deployment_evidence": "owner_project_ui_2026-10-26; full API snapshot pending",
+    "reference_manifest": "gas-release-reference-pr7-2026-10-26.json"
   },
   "physical_qa": {
     "normal_read": "previously_accepted",
@@ -63,10 +77,12 @@
     "individual_new_ack_verified": false
   },
   "ci": {
-    "technical_main": "a224cdd1be9ed0a5fa2ba2fd5fc2315c2b22d3b8",
+    "technical_main": "53ae7bb6f248793716473d7ebe7825b2f6a49973",
     "validate_mvp": "success",
     "android_mock": "success",
-    "fresh_samsung_release": "not_executed"
+    "fresh_samsung_release": "not_executed",
+    "validate_mvp_run": 40331434589,
+    "android_mock_run": 40331434656
   },
   "safety": {
     "private_identifiers_included": false,

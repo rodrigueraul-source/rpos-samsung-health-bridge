@@ -1,0 +1,183 @@
+{
+  "schema_version": "rpos.gas.release.reference.v1",
+  "reference_only": true,
+  "published_snapshot_retrieved": false,
+  "release_pr": 7,
+  "release_commit": "41a67b3a0751b014df0f741c77fc75140424437c",
+  "audited_main": "53ae7bb6f248793716473d7ebe7825b2f6a49973",
+  "hash_rule": "SHA-256 of exact UTF-8 GitHub blob bytes; no newline, whitespace or Unicode normalization",
+  "files": [
+    {
+      "path": "apps-script/BridgeAutomatic.gs",
+      "bytes": 20127,
+      "sha256": "ac8230458b13b0a80b8c9326da9e026c5f52c8b4c43537e8e902dfdddc7b40d9",
+      "git_blob_sha1": "d608100ff30f378a965f6959ae5b995c67272972",
+      "apps_script_name": "BridgeAutomatic",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeAutomaticAudit.gs.txt",
+      "bytes": 6499,
+      "sha256": "579ceab17767ba251efce49d0c7ea8c90df65277f5053143ae997cceb61aba37",
+      "git_blob_sha1": "328d321fb5e4b3268e0bca5dc9577f6f3f2055f8",
+      "apps_script_name": "BridgeAutomaticAudit",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeAutomaticPilot.gs.txt",
+      "bytes": 9986,
+      "sha256": "d880c8157922a453919d819344706a8c4bf90114ea2258e33d0f89de8b423ccc",
+      "git_blob_sha1": "f535da03219955928ec712a48beca63e029116ce",
+      "apps_script_name": "BridgeAutomaticPilot",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeAutomaticRuntime.gs.txt",
+      "bytes": 72658,
+      "sha256": "feeb0e2ad9780e681f3ffa9d337190ee00c05764481b54ce14db4093724ee4f3",
+      "git_blob_sha1": "df4f133fc32c6fe0e8de9b91015f5f7e44d7389e",
+      "apps_script_name": "BridgeAutomaticRuntime",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeCanonicalDelivery.gs",
+      "bytes": 21671,
+      "sha256": "5606bdf8d97b635cae47ba5a9024023f1db1bcd61310d6ca477dfef834b75e95",
+      "git_blob_sha1": "a42abc2d7c3130e839e29cb5db005befc0c9da59",
+      "apps_script_name": "BridgeCanonicalDelivery",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeDelivery.gs",
+      "bytes": 12399,
+      "sha256": "ac4d6815c68bba29e5c7acb5d82fac74a485f7b2a0d82a23805069733797c54f",
+      "git_blob_sha1": "b740d7eb30868dd2cd0b318fd1212cae2920ce93",
+      "apps_script_name": "BridgeDelivery",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeDiagnostics.gs",
+      "bytes": 14029,
+      "sha256": "68570fc2998018f13a8bc57140b315da6de1c3faa71bf1e28532942c7f01cc42",
+      "git_blob_sha1": "9bf84bdafdb5bed4ab638f18477b10856e6e1923",
+      "apps_script_name": "BridgeDiagnostics",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeEndpoint.gs",
+      "bytes": 15312,
+      "sha256": "e8609d3ec800e58b5edf5dd7e2e948b3b78c8502c661c2185521b406b1d98752",
+      "git_blob_sha1": "05139a9b72f07f4608ebb2f14b9339427c261088",
+      "apps_script_name": "BridgeEndpoint",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeIntake.gs",
+      "bytes": 10445,
+      "sha256": "b61cde91ba223f46b3346bb7c723ba8b0763b865315def37f8acb47c2a59448e",
+      "git_blob_sha1": "0a0ee15973c2f09a535d632eb091d08fa418b4ed",
+      "apps_script_name": "BridgeIntake",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeMigration.gs",
+      "bytes": 11106,
+      "sha256": "cdb38fe554839f48f0e4d548dbee012ed00df10a3c7792b737f507999c8bc577",
+      "git_blob_sha1": "3dfd77014854557cb966d3bd978b546b124e12f8",
+      "apps_script_name": "BridgeMigration",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeNotion.gs",
+      "bytes": 13004,
+      "sha256": "c91e9431be7462cdb9ce8bef5de9ab3d8d1804578dab7acf5b711eb7a47e7c40",
+      "git_blob_sha1": "3891d8f567ee27d0076b23fecb63aabd3cb11c1a",
+      "apps_script_name": "BridgeNotion",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgePilotOperator.gs.txt",
+      "bytes": 3008,
+      "sha256": "a8bb7cb54b2c8f33ca80a093f356901dd9b298291c355d5992696c52727d91e2",
+      "git_blob_sha1": "8cea954d9ce21d3b2b52dbe8e4997c650d4b84d8",
+      "apps_script_name": "BridgePilotOperator",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeRecoveryReview.gs.txt",
+      "bytes": 14082,
+      "sha256": "6133a4a2053169fada4e5931a3c327d121d454493e6718a1bf37e1daeaf196c7",
+      "git_blob_sha1": "38e9f618496853614bea7eecaf76edb5f39174b9",
+      "apps_script_name": "BridgeRecoveryReview",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeRuntime.gs.txt",
+      "bytes": 100304,
+      "sha256": "308f3f55dc7d92815b1db646cb5d8fc3716d3b99ed586ac08634e72f57bd76ab",
+      "git_blob_sha1": "2be60bc0b4ccd00dd73d9d25f2b09609b4176fe5",
+      "apps_script_name": "BridgeRuntime",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeRuntimeHelpers.gs.txt",
+      "bytes": 808,
+      "sha256": "9664219c1f7a0e28bd83a865a1e98a669125d16ddacc1fede516fbb0813d9919",
+      "git_blob_sha1": "f9a81ebe4a2be0f6d564d91ccc3984167c8c64cb",
+      "apps_script_name": "BridgeRuntimeHelpers",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    },
+    {
+      "path": "apps-script/BridgeScheduler.gs",
+      "bytes": 3298,
+      "sha256": "b5e333200b3619108e9853b6b0d98592928b685520aaddd2a195e57d3bd9d577",
+      "git_blob_sha1": "2fdd16c557eb56d031be7a783e851ab12717b584",
+      "apps_script_name": "BridgeScheduler",
+      "type": "SERVER_JS",
+      "unchanged_at_audited_main": true
+    }
+  ],
+  "repository_additions_after_release": [
+    "BridgeContinuousControl.gs",
+    "BridgeHistoricalReview.gs.txt",
+    "BridgePilotExistingReceipt.gs"
+  ],
+  "production_file_inventory_verified": false,
+  "bundle_generation_verified": true,
+  "note": "Repository comparison and generated-bundle checks are verified. Deployed v9 and production HEAD inventories must come from independent Apps Script API captures. Scheduler and unrelated project sources are not published.",
+  "reference_bundle_composition": {
+    "BridgeRuntime": [
+      "BridgeIntake.gs",
+      "BridgeEndpoint.gs",
+      "BridgeDelivery.gs",
+      "BridgeNotion.gs",
+      "BridgeAutomatic.gs",
+      "BridgeScheduler.gs",
+      "BridgeMigration.gs",
+      "BridgeDiagnostics.gs"
+    ],
+    "BridgeAutomaticRuntime": [
+      "BridgeIntake.gs",
+      "BridgeEndpoint.gs",
+      "BridgeDelivery.gs",
+      "BridgeNotion.gs",
+      "BridgeRuntimeHelpers.gs.txt",
+      "BridgeAutomatic.gs"
+    ]
+  }
+}
