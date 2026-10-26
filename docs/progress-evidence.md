@@ -1,6 +1,42 @@
 # Samsung Health Bridge — avance y evidencia
 
-## Estado vigente · conciliación Notion/GitHub · 11-Oct-2026
+## Estado vigente · auditoría productiva 26-Oct-2026
+
+**PASS OPERATIVO LIMITADO · desarrollo 83.33% (5/6).**
+Hitos 1–5 conservan su aceptación; hito 6 dispensado por el propietario para
+este cierre limitado, sin acreditarlo técnicamente.
+
+| Hito | Estado | Límite |
+| --- | --- | --- |
+| 1. Build, SDK y APK firmado | Verificado previamente | No nuevo build físico en esta auditoría |
+| 2. Lectura física y contrato de origen | Verificado previamente | Android 0.8.3 observado en captura del 23-Oct |
+| 3. Recepción firmada privada y cola | Verificado | Originales y permisos privados conservados |
+| 4. Entrega canónica y scheduler | Verificado | Readbacks reales exactos y UID único |
+| 5. Recuperación y continuidad OS/proceso | Verificado previamente | No generalizar a todo fallo arbitrario |
+| 6. Hardening Samsung y release repetible | Dispensado para aceptación limitada | Casos negativos físicos y procedencia binaria completa no acreditados |
+
+Piloto 3/3 cerrado, conciliación revisada confirmada y continuous activo desde
+18-Oct; captura automática real posterior aceptada el 19-Oct. El 26-Oct se
+observó `continuous_active`, 13 journals automáticos confirmados,
+0 attempting y 0 recibos futuros sin confirmar. No hubo cambios runtime.
+
+Cinco intakes privados reales se verificaron contra un export v1 y una evidencia
+v2 exactos por ficha; receipt/hash recalculados, SDK 1.1.0 y nulls preservados.
+Una consulta completa no encontró Source Record ID repetidos. El marcador
+histórico blocked del retry conciliado permanece justificado por su journal
+confirmed y la prioridad del journal en el worker.
+
+Validación del commit técnico main `0067ac5f15e151c13239dcdbafb95d5ea9f3750e`:
+296 pruebas Apps Script, 50 Python, validadores y ambos bundles PASS.
+CI del mismo commit también SUCCESS. Estas pruebas no añaden hitos.
+Ver [auditoría](operations-audit-2026-10-26.md) para los límites y la recuperación.
+
+## Archivo · estado del 11-Oct anterior al piloto automático
+
+La sección siguiente conserva el checkpoint histórico; sus pendientes y flags
+no sustituyen el estado vigente descrito arriba.
+
+
 
 **BUILD · 83.33% · 5/6 hitos verificados · HITO 6 PAUSADO.**
 Control maestro: R-POS Program Registry e Implementation Log de Notion

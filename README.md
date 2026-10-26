@@ -2,81 +2,56 @@
 
 Base técnica para integrar datos de salud y actividad con **R-POS Core Fitness**.
 
-## Estado actual
+## Estado actual · verificado 26-Oct-2026
 
-**BUILD · 83.33% · 5/6 hitos verificados · hito 6 reanudado por instrucción del propietario: APK 0.7.1 y aceptación física.**
+**PASS OPERATIVO LIMITADO · 5/6 hitos técnicos (83.33%).**
+El hito 6 está dispensado por decisión del propietario para este alcance;
+no está acreditado y no se declara 6/6 ni 100%.
 
-**Fuente de control:** R-POS Program Registry e Implementation Log en Notion;
-detalle de trazabilidad en [docs/progress-evidence.md](docs/progress-evidence.md).
-Este porcentaje corresponde a cinco hitos aceptados de seis, no a horas o
-puntos de esfuerzo; **no es Bridge PASS**.
+Notion R-POS Program Registry es el System of Record. El piloto automático
+3/3 y la conciliación del recibo revisado se cerraron el 18-Oct; continuous
+se promovió ese día y una captura real posterior completó la aceptación
+limitada el 19-Oct. La auditoría del 26-Oct conserva esa aceptación.
 
-- **Hito 5 aceptado el 08-Oct:** entrega Core con respuesta perdida recuperada
-  y replay sin nuevas escrituras remotas; reinicio del teléfono reportado por
-  el propietario y corroboración posterior mediante READ/CHECK, registro
-  canónico único, UID/alias/métricas conservados. No se reclama telemetría
-  de boot ni recuperación ante cualquier fallo arbitrario.
-- **v0.7, operación acotada confirmada el 08-Oct:** natación reconciliada en
-  destino existente, acuse Android `confirmed: 4 · staged: 1`, sin duplicados.
-  La captura del 11-Oct muestra `READ PASS · 75 records` y estado local
-  `confirmed: 4 · staged: 3 · recovery: confirmed`: prueba lectura actual,
-  **no** confirmación remota de las tres entradas staged.
-- **Checkpoint histórico del 08-Oct · hito 6 diferido:** otros errores físicos Samsung y checklist de release
-  repetible. No pedir pruebas adicionales, reinstalaciones, finalizadores
-  ni CHECK para cerrar este gate salvo regresión crítica o nueva instrucción.
-- **Configuración conservada según último readback operativo del 08-Oct:**
-  intake/binding ON; entrega continua/migración OFF. Adquisición automática,
-  conciliación automática y SA-RPOS-VERTICAL-001 permanecen fuera del PASS.
-- **Orden posterior del propietario:** cerrar release 0.7.1 y desarrollar adquisición/entrega automáticas conforme a WBS V3. Mantener entrega continua y migración OFF hasta validar los gates; no cambiar visibilidad.
+| Control | Evidencia observada el 26-Oct |
+| --- | --- |
+| Modo | `continuous_active`; consulta sin escrituras ni cambios de propiedades/activadores |
+| Servidor | 13 journals de creación automática confirmados; 0 attempting; 0 recibos posteriores al cutoff sin confirmar |
+| Configuración | Intake/binding/delivery/automatic ON; migration OFF; cutoff original conservado |
+| Activador Bridge | Uno, cada 5 minutos; ejecución autónoma reciente y 0% de errores visible en su tabla |
+| Android | 0.8.3-delivery, última captura del propietario verificada del 23-Oct; 32 confirmed globales, recovery confirmed y automatic ON |
+| Apps Script | Implementación web activa versión 9; fuente instalada de conciliación y control continuo cotejada por SHA-256 |
+| Integridad | Cinco recibos reales cotejados con export v1/v2 de Notion y hashes recalculados; consulta independiente sin UID repetido |
 
-### Candidato 0.7.1
+Los contadores de Android, de journals automáticos y de archivos intake tienen
+denominadores distintos. No son intercambiables. La captura Android no es
+telemetría en vivo del 26-Oct; el fingerprint binario instalado y la fuente
+completa de la implementación web no se certificaron en esta auditoría.
 
-Se recuperaron el APK firmado0.7.0 y el AAR1.1.0 originales. El commit2cdc7f0 y su texto Kotlin no están disponibles; el hardening propio R-POS se restableció desde el bytecode del APK con procedencia explícita. La corrección de recibos conserva consultas HMAC, backoff persistente y polling visible. Mismo paquete/firma/campos persistidos; sin activación de entrega continua o migración. Instalación y lectura real confirmadas. Tres ciclos consecutivos acotados de recibo/acuse/UID único aceptados; no sustituyen la adquisición y entrega automáticas pendientes. La primera ejecución carece de JSON final: no se atribuyen sus contadores de recovery/replay. Dos ejecuciones posteriores sí acreditan recuperación y replay sin nuevas escrituras. Ver [revisión del release](docs/release-v0.7.1.md).
+El `staged` del archivo intake se conserva como original. La confirmación de
+entrega procede del journal canónico y su readback. Un marcador histórico retry
+`blocked` con journal `confirmed` queda excluido por el worker antes de evaluar
+retry; no es un bloqueo activo y no se borra para mejorar un contador.
 
-### Contexto histórico · 06-Oct
+Ver [auditoría y recuperación](docs/operations-audit-2026-10-26.md) y
+[historial de hitos](docs/progress-evidence.md). Los documentos de release
+anteriores describen sus checkpoints históricos. La propuesta de política
+de release del PR #12 sigue separada de esta aceptación operativa.
 
-Los checkpoints anteriores validaron entrega canónica acotada, scheduler,
-replay sin duplicados y versión v0.5. La preparación de recuperación v0.6
-se describe en los documentos técnicos como antecedente, no como estado actual.
+### Función y límites
 
-La rama de desarrollo `bridge/android-acquisition-v0.2` reconstruye la capa Android faltante sin reemplazar el MVP Python ya validado.
+Samsung Health → Android Exercise READ → recepción HMAC → Drive privado →
+único escritor Apps Script → Notion canónico → consulta firmada de ACK Android.
+Notion conserva los registros oficiales; el Bridge no crea otro tracker.
 
-### Evidencia disponible
+El JobScheduler Android persistente solicita ciclos cada 15 minutos; el sistema
+puede diferirlos por batería, cuotas o force-stop. El timer de Apps Script
+atiende pendientes sin depender de ChatGPT Work. No se promete latencia fija
+ni estabilidad prolongada que la evidencia no cubra.
 
-- Python normalization MVP + schema/tests.
-- Proyecto Android mínimo con sabores `mock` y `samsung`.
-- Contrato `ExerciseReader`.
-- UI **READ EXERCISE** + selector por fecha/título/UID + **COPY SELECTED JSON** para el handoff privado de un registro.
-- Adaptador Samsung orientado a **Exercise READ** y preservación del `uid` original.
-- CI independiente del SDK propietario mediante `mockDebug`.
-- Device UAT documentado.
-- Exportación v0.3 de UID, tiempos, origen/dispositivo y detalles objetivos por sesión.
-- Staging SQLite privado por `(source, uid)` con intentos de escritura persistentes y confirmación protegida por hash.
-- Coordinador Python v0.4 con consulta previa, bloqueo entre procesos y recuperación de respuestas perdidas; el flujo operativo elegido usa Apps Script.
-- Pruebas Kotlin del formato JSON y pruebas Python del staging/replay persistente.
-- Adaptador REST de Notion y CLI alternativo: consulta paginada, revisión privada por hash, conservación/búsqueda de alias y verificación de evidencia. Preparado con servicios sintéticos; no confundir con el flujo Apps Script operativo. Ver `docs/notion-transport.md`.
-- Apps Script operativo: recepción HMAC privada, entrega canónica acotada con journal/readback y reutilización del scheduler verificadas. Entrega continua/migración OFF. La nueva consulta HMAC de recibo es de sólo lectura incluso con delivery ON; su publicación en Google requiere actualizar la implementación existente. Ver `apps-script/README.md`.
-- Android v0.5 instalado/configurado: cola cifrada, export original, firma/envío/check en primer plano, backoff y un recibo físicamente confirmado. Android v0.6 agrega recuperación separada por consulta sin reenviar el entrenamiento. Ver `docs/android-delivery.md` y `docs/android-recovery.md`.
-- Migración histórica y aliases revisados aplicados en el flujo acotado: los journals/evidencias aceptados se conservan. No volver a migrarlos para probar recuperación.
-
-La actualización v0.6 pasó 41 pruebas Android y 169 Apps Script locales;
-APK release firmado y certificado anterior comparados. Build y hashes:
-`docs/android-delivery-build-evidence.md`. La prueba física de v0.6 estaba pendiente en ese checkpoint histórico; la evidencia operativa posterior corresponde a v0.7.
-
-### Gate pendiente
-
-La lectura inicial, el mapeo asistido de UID y el replay controlado ya tienen
-evidencia privada. Dos UID reales y la denegación/restauración de permisos ya
-tienen checkpoints aceptados. El runtime, entrega acotada y alias del scheduler
-ya están verificados. La recuperación real exigida para el hito 5 fue
-aceptada el 08-Oct con evidencia productiva y confirmación física posterior.
-Quedan otros errores físicos Samsung y el cierre operacional repetible del
-hito 6, reanudado por instrucción posterior del propietario. Tres ciclos acotados de recibos están aceptados; adquisición y entrega automáticas siguen pendientes.
-Entrega continua y migración no están activadas; los cambios de código y merge no autorizan por sí solos su activación. La WBS
-no define pesos; el conteo vigente de 5/6 usa seis hitos explícitos. Ver
-`docs/progress-evidence.md`. Bridge no alcanza PASS hasta demostrar el flujo completo:
-
-`Samsung Health -> own app -> Exercise READ -> original Samsung uid -> R-POS Source Record ID -> replay/dedup proof`
+Conservar UID, export original, recibos, journals, aliases, cutoff, cola cifrada
+y migración OFF. No reinstalar, reenviar, repetir conciliaciones cerradas,
+reinicializar colas ni inducir sesiones artificiales para probar el cierre.
 
 ## Arquitectura
 
