@@ -1,0 +1,81 @@
+{
+  "schema_version": "rpos.bridge.release.provenance.audit.v1",
+  "audit_date": "2026-10-26",
+  "technical_status": "HOLD",
+  "milestones": {
+    "verified": 5,
+    "total": 6,
+    "percentage": 83.33,
+    "milestone_6_verified": false,
+    "prior_waiver_is_not_verification": true
+  },
+  "distributed_apk": {
+    "package": "com.rpos.bridge.delivery",
+    "version_code": 12,
+    "version_name": "0.8.3-delivery",
+    "size_bytes": 3929882,
+    "sha256": "e4e8a4b470eb9b23c41cbd18f06cd1e78e5113ee9065722ffaf5e91ca72607d5",
+    "certificate_sha256": "765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3",
+    "v3_signature_verified": true,
+    "content_digest_verified": true,
+    "verification_method": "read-only AOSP-format verifier with cryptography; not Android CTS",
+    "min_sdk": 29,
+    "target_sdk": 36,
+    "debuggable": false,
+    "classes_dex_sha256": "67aeaed8b66b32813acc612a9a3f8d7ae41771fd737e08fdb4d26020b3baf7e4"
+  },
+  "installed_apk": {
+    "reported_version_name": "0.8.3-delivery",
+    "physical_ui_observed_on": "2026-10-26",
+    "sha256": null,
+    "certificate_sha256": null,
+    "version_code_verified": null,
+    "extraction_status": "waiting_for_owner_read_only_ADB_path"
+  },
+  "build_provenance": {
+    "android_gradle_plugin": "8.13.2",
+    "artifact_vcs_metadata": "generate_error_reason: NO_VALID_GIT_FOUND",
+    "source_commit_verified": null,
+    "source_commit_candidate": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
+    "compared_main": "a224cdd1be9ed0a5fa2ba2fd5fc2315c2b22d3b8",
+    "android_source_differences": 0,
+    "independent_rebuild_performed": false
+  },
+  "gas": {
+    "last_observed_deployment_version": 9,
+    "last_observed_date": "2026-10-26",
+    "complete_versioned_source_fingerprint": null,
+    "fresh_inspection_status": "blocked_by_Google_human_verification",
+    "configuration_snapshot_current": false,
+    "runtime_changes": false
+  },
+  "physical_qa": {
+    "normal_read": "previously_accepted",
+    "consent_denied_restored": "previously_accepted",
+    "queue_and_restart": "previously_accepted",
+    "samsung_unavailable_error_matrix": "not_physically_verified",
+    "new_owner_ui_status": {
+      "confirmed_global": 37,
+      "recovery": "confirmed",
+      "automatic": "ON",
+      "last_result": "completed_with_record_changes"
+    },
+    "individual_new_ack_verified": false
+  },
+  "ci": {
+    "technical_main": "a224cdd1be9ed0a5fa2ba2fd5fc2315c2b22d3b8",
+    "validate_mvp": "success",
+    "android_mock": "success",
+    "fresh_samsung_release": "not_executed"
+  },
+  "safety": {
+    "private_identifiers_included": false,
+    "credentials_included": false,
+    "production_code_changes": false,
+    "reinstall": false,
+    "permissions_changed": false,
+    "deployment_replaced": false,
+    "synthetic_workouts_created": false
+  },
+  "technical_closure_date": null
+}
