@@ -1,0 +1,232 @@
+{
+  "schema_version": "rpos.gas.v9.source.certification.v1",
+  "evidence_date": "2026-10-26T19:18:32-06:00",
+  "result_snapshot": "PASS",
+  "result_effective_bridge_source_correspondence": "PASS",
+  "project": "Existing R-POS scheduler; private identifiers intentionally omitted",
+  "snapshot_version": 9,
+  "deployment_identity": "Previously accepted owner UI evidence: version9,15-Oct-2026,10:32 America/Mexico_City; fresh official API binding metadata not yet obtained",
+  "approved_release_commit": "41a67b3a0751b014df0f741c77fc75140424437c",
+  "capture_route": "Owner Google APIs Explorer projects.getContent versionNumber=9; complete JSON pasted into private Google Doc and read via official authenticated Docs connector",
+  "version_parameter_evidence": "Owner screenshot1000001903 shows9; screenshot1000001902 HTTP200; source response does not echo versionNumber",
+  "complete_snapshot_recovered": true,
+  "file_count": 11,
+  "JS_files_parsed": 10,
+  "source_hash_rule": "SHA-256 of each decoded API files[].source string encoded as UTF-8; no whitespace, line ending or Unicode normalization. Exact source-string identity only, not original HTTP serialization byte identity. Google Docs paragraph separators joined as LF outside JSON string literals. Leading outer U+000B treated as whitespace, not source content.",
+  "original_HTTP_body_sha256": null,
+  "reconstructed_JSON_text_sha256": "bf5b44369e0c0c52dd870410f511cc9a78ea8b839a2e165303e523389d9d34c8",
+  "reconstructed_JSON_text_bytes": 278867,
+  "reconstructed_text_is_not_original_HTTP_byte_capture": true,
+  "files": [
+    {
+      "name": "appsscript",
+      "type": "JSON",
+      "source_utf8_bytes": 211,
+      "source_utf8_sha256": "df20031418aef9d5dca687b22cd8edb93ee673be7609bd161a8b213a9b9ae05f",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": null
+    },
+    {
+      "name": "Código",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 40453,
+      "source_utf8_sha256": "03b2312bd68fce9328c086e7f27f472fa3240f97eb0c59bd83793b3fea1ea220",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": null
+    },
+    {
+      "name": "BridgeRuntime",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 67671,
+      "source_utf8_sha256": "f8b3fa39f2f4d0c46fc9a92493d5bd5df7e7bc61c945d86f6aff545dd1ed58bb",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeRuntime.gs.txt",
+      "PR7_exact": false,
+      "PR7_LF_final_newline_normalized_equal": false
+    },
+    {
+      "name": "BridgeDeliveryReview",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 9395,
+      "source_utf8_sha256": "27a916ac7f8d3cba47f5fd3cea07476ebc3f7b813c4b7886ac80f6639b850801",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": null
+    },
+    {
+      "name": "BridgeOneReceiptCutover",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 9605,
+      "source_utf8_sha256": "b8825f81de58d19d9812a5afaf09f1a6df4b4a7dce2bf6ec34d23c3c25f97342",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": null
+    },
+    {
+      "name": "BridgeReviewRecovery",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 14409,
+      "source_utf8_sha256": "c5063f6a127eb7795ecd7b51cb921a5137f5a69fb1e98259956cfa5a7b7dae34",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": null
+    },
+    {
+      "name": "BridgeRuntimeHelpers",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 807,
+      "source_utf8_sha256": "866bac2d9d532edeb043f954365e51cffc7864fb2cf50329ec1c7ed78a498c75",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeRuntimeHelpers.gs.txt",
+      "PR7_exact": false,
+      "PR7_LF_final_newline_normalized_equal": true
+    },
+    {
+      "name": "BridgeCanonicalDelivery",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 21670,
+      "source_utf8_sha256": "8e5ee7fe2bba66578f784579c5f3a423cda58f4419eacae48579c747f05afa62",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeCanonicalDelivery.gs",
+      "PR7_exact": false,
+      "PR7_LF_final_newline_normalized_equal": true
+    },
+    {
+      "name": "BridgeAutomaticRuntime",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 72658,
+      "source_utf8_sha256": "feeb0e2ad9780e681f3ffa9d337190ee00c05764481b54ce14db4093724ee4f3",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeAutomaticRuntime.gs.txt",
+      "PR7_exact": true,
+      "PR7_LF_final_newline_normalized_equal": true
+    },
+    {
+      "name": "BridgeAutomaticPilot",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 9986,
+      "source_utf8_sha256": "d880c8157922a453919d819344706a8c4bf90114ea2258e33d0f89de8b423ccc",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeAutomaticPilot.gs.txt",
+      "PR7_exact": true,
+      "PR7_LF_final_newline_normalized_equal": true
+    },
+    {
+      "name": "BridgeAutomaticAudit",
+      "type": "SERVER_JS",
+      "source_utf8_bytes": 6499,
+      "source_utf8_sha256": "579ceab17767ba251efce49d0c7ea8c90df65277f5053143ae997cceb61aba37",
+      "last_update_time": "2026-10-15T16:29:09.986Z",
+      "matches_HEAD_exact": true,
+      "PR7_reference_path": "apps-script/BridgeAutomaticAudit.gs.txt",
+      "PR7_exact": true,
+      "PR7_LF_final_newline_normalized_equal": true
+    }
+  ],
+  "all11_source_fingerprints_match_unversioned_HEAD": true,
+  "HEAD_additional_Bridge_files": [
+    "BridgeContinuousControl",
+    "BridgeHistoricalSwimmingReview",
+    "BridgePilotExistingReceipt"
+  ],
+  "HEAD_additional_unrelated_modules": 5,
+  "compositions": {
+    "method": "Full official owner-provided v9 content parsed with Acorn8.15; reproducible composition from exact PR7 source blobs. Static analysis only; no Apps Script function or service invoked.",
+    "snapshot_complete": true,
+    "JS_files_parsed": 10,
+    "approved_commit": "41a67b3a0751b014df0f741c77fc75140424437c",
+    "partial_runtime": {
+      "module_count": 6,
+      "modules": [
+        {
+          "name": "BridgeIntake.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "83a4463714101ea3e9f036bf72bde0bd9df7239f9bb06f145a073200031e95f7"
+        },
+        {
+          "name": "BridgeEndpoint.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "161272ad72098c3ec77376c62f09c83a35c640ad34fc0b6f7c52906b2fa10260"
+        },
+        {
+          "name": "BridgeNotion.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "309bdf800c54e865bb78c0db1ba1b943fa6d81f969f28ca0ced4c5ae5be8cd32"
+        },
+        {
+          "name": "BridgeScheduler.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "6e80c1eb827620fff4451021948ffd4cc540a7b782b8ea52b570f918c6d8d82f"
+        },
+        {
+          "name": "BridgeMigration.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "c204bb9a9d8c9af9991d9381d4b7197fc84ccd987297a8f2953a9064d2d661dd"
+        },
+        {
+          "name": "BridgeDiagnostics.gs",
+          "approved_source_trimEnd_equal": true,
+          "module_sha256": "5443389637a088fed0f38cc88470ca64c37a25f4058d92b17dba0f949c3fe037"
+        }
+      ],
+      "byte_identity_with_full_8_module_template": false,
+      "normalization": "Remove exactly one additional LF at character offset26016 between Endpoint and Notion; no executable code or other whitespace normalization.",
+      "normalized_equal": true,
+      "source_sha256": "f8b3fa39f2f4d0c46fc9a92493d5bd5df7e7bc61c945d86f6aff545dd1ed58bb",
+      "regenerated_6_module_sha256": "2b0456f5e008f6bedbc83ae5d10fb537618fe2bdab12d55c825f6662fccfdc97"
+    },
+    "automatic_addon": {
+      "module_count": 6,
+      "names": [
+        "BridgeIntake.gs",
+        "BridgeEndpoint.gs",
+        "BridgeDelivery.gs",
+        "BridgeNotion.gs",
+        "BridgeRuntimeHelpers.gs.txt",
+        "BridgeAutomatic.gs"
+      ],
+      "exact_regeneration": true,
+      "source_sha256": "feeb0e2ad9780e681f3ffa9d337190ee00c05764481b54ce14db4093724ee4f3"
+    },
+    "top_level": {
+      "doPost": [
+        "BridgeRuntime"
+      ],
+      "pending_worker": [
+        "BridgeAutomaticRuntime"
+      ],
+      "duplicate_function_declarations": {}
+    },
+    "scheduler": {
+      "private_source_not_in_PR7": true,
+      "exact_HEAD_fingerprint_verified_separately": true,
+      "reviewed_wrapper_present": true,
+      "wrapper_source_sha256": "76b4982656a094a9790b97a4940a549d598b156c90468b529bb7746693b8aeb8"
+    },
+    "legacy_private_files_without_PR7_blob": [
+      "Código",
+      "BridgeDeliveryReview",
+      "BridgeOneReceiptCutover",
+      "BridgeReviewRecovery"
+    ],
+    "limitation": "Private scheduler/operators are fully captured and fingerprinted, but no whole-file PR7 blob is present for these four files. Do not label all11files byte-identical to PR7. Critical receptor/ACK/automatic code is matched by module composition; no current flags or deployment metadata are inferred from source.",
+    "runtime_executed": false
+  },
+  "private_recovery_core": {
+    "approved_reference": "apps-script/BridgeRecoveryReview.gs.txt",
+    "function": "rposBridgeRecoveryReviewRuntime_",
+    "exact_function_source_equal": true,
+    "private_wrapper_endpoint_omitted": true
+  },
+  "correspondence_scope": "Critical signed intake/receptor, signed read-only acknowledgement and automatic delivery code maps to approved PR7 modules. Runtime six-module composition uses an extra boundary LF; addon regenerates exactly. Four private scheduler/operator whole-file sources have no PR7 blob; they are retained and fingerprinted as existing baseline, not falsely labelled PR7 byte-identical.",
+  "current_operational_flags_read": false,
+  "runtime_or_deployment_changes": false,
+  "global_milestone_gate": "HOLD5/6. Android historical build checkout origin remains unknown; no provenance exception or final6/6 approval has been granted."
+}
