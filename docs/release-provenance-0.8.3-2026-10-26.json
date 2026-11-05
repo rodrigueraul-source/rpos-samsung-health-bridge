@@ -41,40 +41,60 @@
     "source_commit_candidate": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
     "compared_main": "53ae7bb6f248793716473d7ebe7825b2f6a49973",
     "android_source_differences": 0,
-    "independent_rebuild_performed": false,
+    "independent_rebuild_performed": true,
     "candidate_ci_flavor": "mock_only",
     "candidate_ci_success_count": 4,
     "candidate_ci_retained_artifacts_returned": 0,
-    "published_github_releases_count": 0
+    "published_github_releases_count": 0,
+    "independent_rebuild_result": "SUCCESS_UNSIGNED_DELIVERY_RELEASE",
+    "independent_tests": {
+      "tests": 71,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "technical_payload_correspondence": "PASS_18_COMMON_ENTRIES_EXACT_INCLUDING_DEX_MANIFEST_RESOURCES",
+    "historical_provenance_status": "HOLD_original_checkout_and_build_log_not_independently_recovered",
+    "rebuild_evidence": "independent-rebuild-proof-2026-10-26.json",
+    "contemporaneous_release_attestation_pr": 8,
+    "unsigned_rebuild_sha256": "ece7d0e093ebb15c2e4a8ca082b2e8b30d396837af980fb84c7607bee9e681dc"
   },
   "gas": {
     "last_observed_deployment_version": 9,
     "last_observed_date": "2026-10-26",
     "complete_versioned_source_fingerprint": null,
-    "fresh_inspection_status": "blocked_by_Google_human_verification",
+    "fresh_inspection_status": "HEAD_source_recovered_v9_snapshot_still_blocked",
     "configuration_snapshot_current": false,
     "runtime_changes": false,
     "release_reference_commit": "41a67b3a0751b014df0f741c77fc75140424437c",
     "reference_source_hashes_verified": true,
     "reference_gs_files_unchanged_at_audited_main": 16,
     "published_snapshot_retrieved": false,
-    "head_snapshot_retrieved": false,
+    "head_snapshot_retrieved": true,
     "api_authentication_available": false,
     "last_observed_deployment_evidence": "owner_project_ui_2026-10-26; full API snapshot pending",
-    "reference_manifest": "gas-release-reference-pr7-2026-10-26.json"
+    "reference_manifest": "gas-release-reference-pr7-2026-10-26.json",
+    "head_acquisition": "official authenticated Google Drive unversioned Apps Script export",
+    "head_export_file_count": 19,
+    "head_automatic_runtime_exact_PR7": true,
+    "head_partial_runtime_six_modules_match_PR7": true,
+    "head_evidence": "head-source-proof-2026-10-26.json"
   },
   "physical_qa": {
-    "normal_read": "previously_accepted",
+    "normal_read": "owner_accepted_physical_READ_51_records",
     "consent_denied_restored": "previously_accepted",
     "queue_and_restart": "previously_accepted",
-    "samsung_unavailable_error_matrix": "not_physically_verified",
+    "samsung_unavailable_error_matrix": "BR07_CLOSED_PASS_WITH_OWNER_ACCEPTED_EXCEPTIONS",
     "new_owner_ui_status": {
       "confirmed_global": 37,
       "recovery": "confirmed",
       "automatic": "ON",
       "last_result": "completed_with_record_changes"
     },
-    "individual_new_ack_verified": false
+    "individual_new_ack_verified": false,
+    "error_3000": "owner_accepted_physical_PASS",
+    "errors_3001_3002_3003": "not_physically_executed_residual_risk_explicitly_accepted_by_owner_2026-10-26",
+    "br07_reopened": false
   },
   "ci": {
     "technical_main": "53ae7bb6f248793716473d7ebe7825b2f6a49973",

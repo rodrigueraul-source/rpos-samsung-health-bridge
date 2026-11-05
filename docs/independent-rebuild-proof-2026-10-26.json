@@ -1,0 +1,309 @@
+{
+  "schema_version": "rpos.bridge.independent.rebuild.audit.v1",
+  "audit_date": "2026-10-26",
+  "status": "TECHNICAL_PAYLOAD_PASS_HISTORICAL_PROVENANCE_HOLD",
+  "source_candidate": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
+  "source_files_verified": 36,
+  "source_manifest_sha256": "f33368727e0409896f3649cbf40cf1819188d4cca28d08d56b09f91a66ea5da9",
+  "build_tasks": [
+    "assembleDeliveryRelease",
+    "testDeliveryReleaseUnitTest"
+  ],
+  "build_result": "SUCCESS",
+  "tests": {
+    "tests": 71,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "unsigned_artifact": {
+    "bytes": 3917071,
+    "sha256": "ece7d0e093ebb15c2e4a8ca082b2e8b30d396837af980fb84c7607bee9e681dc"
+  },
+  "distribution_sha256": "e4e8a4b470eb9b23c41cbd18f06cd1e78e5113ee9065722ffaf5e91ca72607d5",
+  "common_entries": 19,
+  "exact_entries": 18,
+  "different_entries": [
+    {
+      "entry": "META-INF/version-control-info.textproto",
+      "original_bytes": 42,
+      "rebuilt_bytes": 46,
+      "original_sha256": "577a29846b9d2ab88f013ed5ce0cc75355d4cfbef540ef637c49c95d233c236f",
+      "rebuilt_sha256": "38d377afa76b6364e5bf551cf4ffec1a881a46102a0047f523fbf148e0df6928",
+      "exact": false
+    }
+  ],
+  "distribution_only_entries": [
+    "META-INF/MANIFEST.MF",
+    "META-INF/RPOS-DEL.RSA",
+    "META-INF/RPOS-DEL.SF"
+  ],
+  "vcs_metadata": {
+    "original": "generate_error_reason: NO_VALID_GIT_FOUND",
+    "rebuilt": "generate_error_reason: NO_SUPPORTED_VCS_FOUND"
+  },
+  "official_apksigner": {
+    "version": "Android Build Tools36.0.0",
+    "result": "Verifies",
+    "v3": true,
+    "signers": 1,
+    "certificate_sha256": "765e88966e33c23baec6def8445015623154d04f550c1d8592ae4506d7fa24a3"
+  },
+  "payload_entry_fingerprints": [
+    {
+      "entry": "AndroidManifest.xml",
+      "original_bytes": 3372,
+      "rebuilt_bytes": 3372,
+      "original_sha256": "667772a96376efe37d64ebb947e1e6c9bf261d768d3aec5f7f1647c04d4878bf",
+      "rebuilt_sha256": "667772a96376efe37d64ebb947e1e6c9bf261d768d3aec5f7f1647c04d4878bf",
+      "exact": true
+    },
+    {
+      "entry": "DebugProbesKt.bin",
+      "original_bytes": 1733,
+      "rebuilt_bytes": 1733,
+      "original_sha256": "cd3da36122413f84be484c77cde4a77729f9e8f81a285408d073300c8385ca3a",
+      "rebuilt_sha256": "cd3da36122413f84be484c77cde4a77729f9e8f81a285408d073300c8385ca3a",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/com/android/build/gradle/app-metadata.properties",
+      "original_bytes": 57,
+      "rebuilt_bytes": 57,
+      "original_sha256": "d4ac79cd8ad9ba3ea7cf060de45cda4da89d9340e11be21193e0100e18aae8fb",
+      "rebuilt_sha256": "d4ac79cd8ad9ba3ea7cf060de45cda4da89d9340e11be21193e0100e18aae8fb",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/kotlinx_coroutines_android.version",
+      "original_bytes": 6,
+      "rebuilt_bytes": 6,
+      "original_sha256": "34d597db43ca53b2fd72ccbdd1af7a0fe238c2c0b8321dad8f43a1613143fc62",
+      "rebuilt_sha256": "34d597db43ca53b2fd72ccbdd1af7a0fe238c2c0b8321dad8f43a1613143fc62",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/kotlinx_coroutines_core.version",
+      "original_bytes": 6,
+      "rebuilt_bytes": 6,
+      "original_sha256": "34d597db43ca53b2fd72ccbdd1af7a0fe238c2c0b8321dad8f43a1613143fc62",
+      "rebuilt_sha256": "34d597db43ca53b2fd72ccbdd1af7a0fe238c2c0b8321dad8f43a1613143fc62",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/services/kotlinx.coroutines.CoroutineExceptionHandler",
+      "original_bytes": 54,
+      "rebuilt_bytes": 54,
+      "original_sha256": "3129b8edf6db07de6f8ff47695e2177c8bba4eed2962d3085c719e5acbb58a33",
+      "rebuilt_sha256": "3129b8edf6db07de6f8ff47695e2177c8bba4eed2962d3085c719e5acbb58a33",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/services/kotlinx.coroutines.internal.MainDispatcherFactory",
+      "original_bytes": 52,
+      "rebuilt_bytes": 52,
+      "original_sha256": "a1ea77ea8f93f419256b6e66f29713f950d8d6e90442b608d880a48003b5eb72",
+      "rebuilt_sha256": "a1ea77ea8f93f419256b6e66f29713f950d8d6e90442b608d880a48003b5eb72",
+      "exact": true
+    },
+    {
+      "entry": "META-INF/version-control-info.textproto",
+      "original_bytes": 42,
+      "rebuilt_bytes": 46,
+      "original_sha256": "577a29846b9d2ab88f013ed5ce0cc75355d4cfbef540ef637c49c95d233c236f",
+      "rebuilt_sha256": "38d377afa76b6364e5bf551cf4ffec1a881a46102a0047f523fbf148e0df6928",
+      "exact": false
+    },
+    {
+      "entry": "classes.dex",
+      "original_bytes": 3898636,
+      "rebuilt_bytes": 3898636,
+      "original_sha256": "67aeaed8b66b32813acc612a9a3f8d7ae41771fd737e08fdb4d26020b3baf7e4",
+      "rebuilt_sha256": "67aeaed8b66b32813acc612a9a3f8d7ae41771fd737e08fdb4d26020b3baf7e4",
+      "exact": true
+    },
+    {
+      "entry": "kotlin-tooling-metadata.json",
+      "original_bytes": 625,
+      "rebuilt_bytes": 625,
+      "original_sha256": "4796037290626b444ce0ddd17b72a68cfe63790a26e716941011fd2a53e2642a",
+      "rebuilt_sha256": "4796037290626b444ce0ddd17b72a68cfe63790a26e716941011fd2a53e2642a",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/annotation/annotation.kotlin_builtins",
+      "original_bytes": 1022,
+      "rebuilt_bytes": 1022,
+      "original_sha256": "ae9ec2e633ab0777b8ec1e7c15218382ceac8c5ead2cdedde7cc9ea31457ce85",
+      "rebuilt_sha256": "ae9ec2e633ab0777b8ec1e7c15218382ceac8c5ead2cdedde7cc9ea31457ce85",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/collections/collections.kotlin_builtins",
+      "original_bytes": 8625,
+      "rebuilt_bytes": 8625,
+      "original_sha256": "ce49200a7ebbdc82ec217d2f717e90ce752534e02ec8b737518a744850bc8e3e",
+      "rebuilt_sha256": "ce49200a7ebbdc82ec217d2f717e90ce752534e02ec8b737518a744850bc8e3e",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/concurrent/atomics/atomics.kotlin_builtins",
+      "original_bytes": 2882,
+      "rebuilt_bytes": 2882,
+      "original_sha256": "dd63195c7714bd3755d938dce9600132ff508a2838674fdf19108275c8dc9077",
+      "rebuilt_sha256": "dd63195c7714bd3755d938dce9600132ff508a2838674fdf19108275c8dc9077",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/coroutines/coroutines.kotlin_builtins",
+      "original_bytes": 139,
+      "rebuilt_bytes": 139,
+      "original_sha256": "f947b45a78233ddbe229290e0c240c946910649cf6ce1c5fd003f834f6f90369",
+      "rebuilt_sha256": "f947b45a78233ddbe229290e0c240c946910649cf6ce1c5fd003f834f6f90369",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/internal/internal.kotlin_builtins",
+      "original_bytes": 596,
+      "rebuilt_bytes": 596,
+      "original_sha256": "6e29094940ebfc967e34d9ccf24521a52ffef3c4b6b47566b19960a04131557e",
+      "rebuilt_sha256": "6e29094940ebfc967e34d9ccf24521a52ffef3c4b6b47566b19960a04131557e",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/kotlin.kotlin_builtins",
+      "original_bytes": 30920,
+      "rebuilt_bytes": 30920,
+      "original_sha256": "8f37cbb253a76650c4e313f98f70d081d2ae66d05174abf6a5824cbf7926616b",
+      "rebuilt_sha256": "8f37cbb253a76650c4e313f98f70d081d2ae66d05174abf6a5824cbf7926616b",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/ranges/ranges.kotlin_builtins",
+      "original_bytes": 4353,
+      "rebuilt_bytes": 4353,
+      "original_sha256": "629c166aa811101d3954f76c58b7ce3648647a1b3529d2351a799fcb43347a34",
+      "rebuilt_sha256": "629c166aa811101d3954f76c58b7ce3648647a1b3529d2351a799fcb43347a34",
+      "exact": true
+    },
+    {
+      "entry": "kotlin/reflect/reflect.kotlin_builtins",
+      "original_bytes": 4859,
+      "rebuilt_bytes": 4859,
+      "original_sha256": "eeb5c2f4756a5d80414002948483b375378cb0bd5c2fc54a1d1d2e2ad3c038f6",
+      "rebuilt_sha256": "eeb5c2f4756a5d80414002948483b375378cb0bd5c2fc54a1d1d2e2ad3c038f6",
+      "exact": true
+    },
+    {
+      "entry": "resources.arsc",
+      "original_bytes": 768,
+      "rebuilt_bytes": 768,
+      "original_sha256": "982bd0cb441af81b5880a305bcbfd6c9473b8f78344fa11672a60f51a81d948a",
+      "rebuilt_sha256": "982bd0cb441af81b5880a305bcbfd6c9473b8f78344fa11672a60f51a81d948a",
+      "exact": true
+    }
+  ],
+  "toolchain": {
+    "gradle-8.13-bin.zip": {
+      "bytes": 136983045,
+      "sha256": "20f1b1176237254a6fc204d8434196fa11a4cfb387567519c61556e8710aed78"
+    },
+    "platform-36_r02.zip": {
+      "bytes": 65878410,
+      "sha256": "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e"
+    },
+    "build-tools_r36_linux.zip": {
+      "bytes": 63737259,
+      "sha256": "5d9ac77fb6ff43d9da518a337b4fcf8f9097113df531d99ccefe80ef7ce8250b"
+    },
+    "jdk": {
+      "package": "openjdk-17-jdk-headless",
+      "version": "17.0.20+8-1~24.04",
+      "filename": "pool/main/o/openjdk-17/openjdk-17-jdk-headless_17.0.20+8-1~24.04_amd64.deb",
+      "sha256": "24a6fc05d51f205b4de06f78621c37f27d1e87673aa55507cf38d20f7eb38968",
+      "repository_snapshot": "https://snapshot.ubuntu.com/ubuntu/20260828T000000Z/",
+      "signed_repository_verified": true,
+      "package_index_sha256": "d649ab48de60c7a858e980d9fde509c489a29340922826b16bc5b3c1eae4b439"
+    },
+    "sdk_AAR": {
+      "sha256": "f5d3d83cf00b97d0bb1b1db4da076e861eb1c3e6e704d89a34e68909d2f38654",
+      "source": "original private Drive SDK1.1.0 ZIP"
+    }
+  },
+  "dependencies": [
+    {
+      "group": "org.jetbrains.kotlin",
+      "artifact": "kotlin-stdlib",
+      "version": "2.3.20",
+      "files": [
+        {
+          "file": "kotlin-stdlib-2.3.20.jar",
+          "bytes": 1804720,
+          "sha256": "0ae12504a5040ebaf37703908483420d1a5624dd1d93f357665f8c77c848a01e"
+        }
+      ]
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "artifact": "kotlinx-coroutines-core-jvm",
+      "version": "1.10.2",
+      "files": [
+        {
+          "file": "kotlinx-coroutines-core-jvm-1.10.2.jar",
+          "bytes": 1479317,
+          "sha256": "5ca175b38df331fd64155b35cd8cae1251fa9ee369709b36d42e0a288ccce3fd"
+        }
+      ]
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "artifact": "kotlinx-coroutines-android",
+      "version": "1.10.2",
+      "files": [
+        {
+          "file": "kotlinx-coroutines-android-1.10.2.jar",
+          "bytes": 17826,
+          "sha256": "e713f1f874244115a07571065cffa0f24f5e78300e9720fea16de3af1d75fd41"
+        }
+      ]
+    },
+    {
+      "group": "com.google.code.gson",
+      "artifact": "gson",
+      "version": "2.13.2",
+      "files": [
+        {
+          "file": "gson-2.13.2.jar",
+          "bytes": 289901,
+          "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0"
+        }
+      ]
+    },
+    {
+      "group": "com.android.tools.build",
+      "artifact": "gradle",
+      "version": "8.13.2",
+      "files": [
+        {
+          "file": "gradle-8.13.2.jar",
+          "bytes": 13116808,
+          "sha256": "e494f7ce75ca6c1abff301d4a70b18fdd3d6af855875f4f85082bb7608f041de"
+        }
+      ]
+    }
+  ],
+  "historical_attestation": {
+    "pr": 8,
+    "head": "b7b6dc1ce98915ac94e275dee4abb0d2b7425860",
+    "merge": "72ad54f37c3f284a08fe629e2a65684f90507e6d",
+    "merge_time": "2026-10-15T16:55:18Z",
+    "original_library_artifact_created": "2026-10-15T16:55:55.350572Z",
+    "scope": "Contemporaneous release declaration; original checkout/build log not independently recovered"
+  },
+  "original_build_commit_verified": null,
+  "new_release_published": false,
+  "new_signing_performed": false,
+  "installed": false,
+  "production_mutations": false,
+  "owner_risk_exception_approved": false
+}

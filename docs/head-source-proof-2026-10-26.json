@@ -1,0 +1,50 @@
+{
+  "schema_version": "rpos.bridge.head.source.audit.v1",
+  "audit_date": "2026-10-26",
+  "acquisition": "Authenticated official Google Drive source export of current unversioned project",
+  "official_export_files": 19,
+  "published_v9_snapshot_recovered": false,
+  "head_runtime": {
+    "module_count": 6,
+    "modules": [
+      "BridgeIntake.gs",
+      "BridgeEndpoint.gs",
+      "BridgeNotion.gs",
+      "BridgeScheduler.gs",
+      "BridgeMigration.gs",
+      "BridgeDiagnostics.gs"
+    ],
+    "raw_byte_identity": false,
+    "normalization": "Remove exactly the additional LF at character offset 26016 between the Endpoint and Notion module boundaries; no code changes",
+    "normalized_match": true,
+    "actual_sha256": "f8b3fa39f2f4d0c46fc9a92493d5bd5df7e7bc61c945d86f6aff545dd1ed58bb",
+    "regenerated_sha256": "2b0456f5e008f6bedbc83ae5d10fb537618fe2bdab12d55c825f6662fccfdc97",
+    "module_sources_match_PR7": true
+  },
+  "head_automatic_runtime": {
+    "name": "BridgeAutomaticRuntime",
+    "bytes": 72658,
+    "sha256": "feeb0e2ad9780e681f3ffa9d337190ee00c05764481b54ce14db4093724ee4f3",
+    "reference_path": "apps-script/BridgeAutomaticRuntime.gs.txt",
+    "exact_utf8_match": true,
+    "LF_and_final_newline_normalized_equal": true
+  },
+  "top_level_entry_scope": {
+    "method": "Acorn AST Program.body top-level FunctionDeclaration nodes only; lexical IIFE declarations excluded",
+    "bridge_files_parsed": 12,
+    "doPost": [
+      "BridgeRuntime"
+    ],
+    "pending_worker": [
+      "BridgeAutomaticRuntime"
+    ],
+    "duplicate_top_level_functions": {},
+    "execution_performed": false
+  },
+  "release_reference": "41a67b3a0751b014df0f741c77fc75140424437c",
+  "raw_byte_identity_with_full_eight_module_template": false,
+  "effective_head_source_review": "Reviewed core six-module source and isolated automatic addon; v9 content still requires official immutable snapshot",
+  "private_source_included": false,
+  "private_identifiers_included": false,
+  "runtime_changed": false
+}
